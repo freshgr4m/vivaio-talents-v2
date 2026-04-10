@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 import type { Player } from '../types/player';
 
 const POSITION_LABELS: Record<string, string> = {
@@ -46,7 +47,28 @@ interface Props { player: Player; allPlayers: Player[]; onClose: () => void; }
 
 export function PlayerModal({ player, allPlayers, onClose }: Props) {
   const [imgError, setImgError] = useState(false);
+  const [shimmer, setShimmer] = useState<{ x: number; y: number } | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const max = computeMax(allPlayers);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotateY =  ((x / rect.width)  - 0.5) * 14;
+    const rotateX = -((y / rect.height) - 0.5) * 14;
+    gsap.to(card, { rotateX, rotateY, duration: 0.15, ease: 'power1.out', transformPerspective: 900 });
+    setShimmer({ x: (x / rect.width) * 100, y: (y / rect.height) * 100 });
+  };
+
+  const handleMouseLeave = () => {
+    const card = cardRef.current;
+    if (!card) return;
+    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
+    setShimmer(null);
+  };
   const league = LEAGUE_HIERARCHY[player.leagueId];
 
   const goalsP90   = player.minutesPlayed > 0 ? ((player.goals   / player.minutesPlayed) * 90).toFixed(2) : '—';
@@ -73,33 +95,47 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
       style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
+      {/* Wrapper perspective per effetto 3D */}
+      <div style={{ perspective: '900px', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
       <div
+        ref={cardRef}
         className="relative w-full overflow-hidden shadow-2xl"
         style={{
-          maxWidth: 480,
-          background: 'var(--color-bg-elevated)',
-          border: `1px solid ${posAccent.color}30`,
+          background: `linear-gradient(145deg, #0a0e1a 0%, #080b14 40%, ${posAccent.color}12 70%, #050508 100%)`,
+          border: `1px solid ${posAccent.color}40`,
           borderRadius: 20,
           maxHeight: '92vh',
           overflowY: 'auto',
-          boxShadow: `0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px ${posAccent.color}15, 0 0 60px ${posAccent.glow}`,
+          boxShadow: `0 24px 60px rgba(0,0,0,0.8), 0 0 0 1px ${posAccent.color}20, 0 0 50px ${posAccent.glow}`,
+          transformStyle: 'preserve-3d',
+          willChange: 'transform',
+          cursor: 'default',
         }}
-        onClick={e => e.stopPropagation()}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
-        {/* Texture bgcard3 in bianco/nero + luminosa */}
+        {/* Texture bgcard3 in bianco/nero — scura */}
         <img
           src="/vivaio-talents-v2/bgcard3.jpg"
           aria-hidden="true"
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
             objectFit: 'cover', objectPosition: 'center',
-            filter: 'grayscale(100%) brightness(1.6) contrast(0.85)',
-            opacity: 0.18,
+            filter: 'grayscale(100%) brightness(1.1) contrast(0.9)',
+            opacity: 0.07,
             zIndex: 0,
             pointerEvents: 'none',
           }}
         />
-        <div className="relative" style={{ zIndex: 1 }}>
+        {/* Shimmer radiale che segue il mouse */}
+        {shimmer && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+            background: `radial-gradient(ellipse 60% 50% at ${shimmer.x}% ${shimmer.y}%, ${posAccent.color}18 0%, transparent 70%)`,
+            transition: 'background 0.05s',
+          }} />
+        )}
+        <div className="relative" style={{ zIndex: 2 }}>
         {/* ── CARD HEADER: colored top band with photo ───────────────────── */}
         <div className="relative overflow-hidden" style={{ minHeight: 200 }}>
 
@@ -358,7 +394,8 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
           </button>
         </div>
         </div>{/* end z-index wrapper */}
-      </div>
+      </div>{/* end card */}
+      </div>{/* end perspective wrapper */}
     </div>
   );
 }
