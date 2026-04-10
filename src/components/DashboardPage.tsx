@@ -506,7 +506,7 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
               {/* Overlay per leggibilità (solo card con immagine) */}
               {bgImg && (
                 <div style={{
-                  position: 'absolute', inset: 0, borderRadius: 14,
+                  position: 'absolute', inset: 0,
                   background: 'linear-gradient(135deg, rgba(5,5,8,0.72) 0%, rgba(5,5,8,0.55) 100%)',
                   pointerEvents: 'none',
                 }} />
