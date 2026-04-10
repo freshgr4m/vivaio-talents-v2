@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   clearAllCache,
   fetchAllLeagues,
@@ -100,7 +100,7 @@ export default function App() {
 
   const hasFetched = useRef(false);
 
-  const fetchData = useCallback(async (forceRefresh = false) => {
+  async function fetchData(forceRefresh = false) {
     if (!API_KEY) return;
     if (forceRefresh) { clearAllCache(); setResults(new Map()); }
     setProgress(new Map());
@@ -112,7 +112,7 @@ export default function App() {
     );
     setApiCalls(getSessionApiCalls());
     setLoading(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   // Carica dal file statico all'avvio
   useEffect(() => {
@@ -170,7 +170,7 @@ export default function App() {
             <img
               src={`${import.meta.env.BASE_URL}logo-scritta.png`}
               alt="Vivaio Talents"
-              className="h-8 sm:h-12 w-auto object-contain"
+              className="h-12 sm:h-20 w-auto object-contain"
             />
             <p className="text-white/40 text-xs sm:text-sm mt-1">
               U23 italiani · Stagione 2025/26
@@ -180,7 +180,7 @@ export default function App() {
           {/* Bottone cerca */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/50 hover:text-white/80 transition-all text-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/50 hover:text-white/80 transition-all text-sm sm:min-w-[180px]"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
