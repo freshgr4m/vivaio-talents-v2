@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  clearAllCache,
-  fetchAllLeagues,
-  getSessionApiCalls,
   loadStaticData,
-  readCache,
-  type FetchProgress,
   type LeagueResult,
 } from './api/football';
 import { Filters } from './components/Filters';
+import { DashboardPage } from './components/DashboardPage';
 import { FormationPage } from './components/FormationPage';
 import { MinutaggioPage } from './components/MinutaggioPage';
 import { VivaiPage } from './components/VivaiPage';
@@ -18,7 +14,6 @@ import { LeagueSection } from './components/LeagueSection';
 import type { AgeFilter, Player, PositionFilter } from './types/player';
 import { LEAGUES } from './types/player';
 
-const API_KEY = import.meta.env.VITE_API_FOOTBALL_KEY as string | undefined;
 
 // ─── Display structure ────────────────────────────────────────────────────────
 
@@ -46,14 +41,6 @@ const DISPLAY_GROUPS: DisplayGroup[] = [
   { type: 'single', name: 'Campionato Primavera 2 (U20)', id: 706 },
 ];
 
-const LEAGUE_NAMES: Record<number, string> = {
-  135: 'Serie A',            136: 'Serie B',
-  138: 'Serie C – Girone A', 942: 'Serie C – Girone B', 943: 'Serie C – Girone C',
-  705: 'Primavera 1',        706: 'Primavera 2',
-  426: 'Serie D – Girone A', 427: 'Serie D – Girone B', 428: 'Serie D – Girone C',
-  429: 'Serie D – Girone D', 430: 'Serie D – Girone E', 431: 'Serie D – Girone F',
-  432: 'Serie D – Girone G', 433: 'Serie D – Girone H', 434: 'Serie D – Girone I',
-};
 
 function positionCode(pos: string): string {
   if (pos === 'Attacker' || pos === 'Forward') return 'F';
@@ -80,16 +67,14 @@ function filterAndSort(
     .sort((a, b) => b.talentScore - a.talentScore);
 }
 
-type Tab = 'classifiche' | 'formazione' | 'vivai' | 'minutaggio';
+type Tab = 'home' | 'classifiche' | 'formazione' | 'vivai' | 'minutaggio';
 
 export default function App() {
   const allLeagueIds = LEAGUES.map(l => l.id);
 
   const [results, setResults]                 = useState<Map<number, LeagueResult>>(new Map());
-  const [progress, setProgress]               = useState<Map<number, FetchProgress>>(new Map());
   const [loading, setLoading]                 = useState(false);
-  const [apiCalls, setApiCalls]               = useState(0);
-  const [activeTab, setActiveTab]             = useState<Tab>('classifiche');
+  const [activeTab, setActiveTab]             = useState<Tab>('home');
   const [selectedLeagues, setSelectedLeagues] = useState<Set<number>>(new Set(allLeagueIds));
   const [positionFilter, setPositionFilter]   = useState<PositionFilter>('ALL');
   const [ageFilter, setAgeFilter]             = useState<AgeFilter>(23);
@@ -100,20 +85,6 @@ export default function App() {
   const [searchOpen, setSearchOpen]           = useState(false);
 
   const hasFetched = useRef(false);
-
-  async function fetchData(forceRefresh = false) {
-    if (!API_KEY) return;
-    if (forceRefresh) { clearAllCache(); setResults(new Map()); }
-    setProgress(new Map());
-    setLoading(true);
-    await fetchAllLeagues(
-      allLeagueIds,
-      (p) => setProgress(prev => new Map(prev).set(p.leagueId, p)),
-      (r) => setResults(prev => new Map(prev).set(r.leagueId, r)),
-    );
-    setApiCalls(getSessionApiCalls());
-    setLoading(false);
-  }
 
   // Carica dal file statico all'avvio
   useEffect(() => {
@@ -154,153 +125,226 @@ export default function App() {
     return [...byId.values()];
   })();
 
-  const pendingLeagues = allLeagueIds.filter(id => {
-    const p = progress.get(id);
-    return !p || (p.status === 'fetching' && !results.has(id));
-  });
-  const currentlyFetching = [...progress.values()].find(p => p.status === 'fetching');
-  const currentName = currentlyFetching ? LEAGUE_NAMES[currentlyFetching.leagueId] : null;
-
   return (
-    <div className="min-h-screen bg-[#0a0a0f] font-[Inter] text-white">
+    <div className="min-h-screen text-white" style={{ background: 'var(--color-bg)' }}>
 
-      {/* Header */}
-      <header className="px-4 sm:px-6 pt-5 sm:pt-8 pb-3 sm:pb-4 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 min-w-0">
-            <img
-              src={`${import.meta.env.BASE_URL}logo-scritta.png`}
-              alt="Vivaio Talents"
-              className="h-12 sm:h-20 w-auto object-contain"
-            />
-            <p className="text-white/40 text-xs sm:text-sm mt-1">
-              U23 italiani · Stagione 2025/26
-            </p>
+      {/* ── HERO HEADER ─────────────────────────────────────────────────────── */}
+      <header
+        className="relative overflow-hidden"
+        style={{ background: 'var(--color-bg)', minHeight: 'clamp(220px, 30vh, 340px)' }}
+      >
+        {/* Diagonal neon band */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            inset: 0,
+            background: 'linear-gradient(118deg, transparent 30%, rgba(0,255,135,0.07) 50%, rgba(0,212,255,0.04) 70%, transparent 85%)',
+            clipPath: 'polygon(38% 0%, 100% 0%, 100% 100%, 55% 100%)',
+          }}
+        />
+        {/* Second diagonal accent */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: 0, left: '-10%', width: '55%', height: '100%',
+            background: 'linear-gradient(118deg, rgba(0,255,135,0.04) 0%, transparent 60%)',
+            clipPath: 'polygon(0% 0%, 90% 0%, 60% 100%, 0% 100%)',
+          }}
+        />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-6">
+          {/* Top row: logo + search */}
+          <div className="flex items-center gap-4 mb-6">
+            {/* Logo block */}
+            <div className="flex-1 min-w-0">
+              <img
+                src={`${import.meta.env.BASE_URL}logo-scritta.png`}
+                alt="Vivaio Talents"
+                className="h-14 sm:h-20 w-auto object-contain"
+              />
+              {/* Neon underline */}
+              <div style={{
+                width: 80, height: 3,
+                background: 'var(--color-neon)',
+                boxShadow: '0 0 12px rgba(0,255,135,0.6)',
+                marginTop: 10, marginBottom: 8,
+              }} />
+              <p style={{
+                fontFamily: 'var(--font-label)',
+                fontSize: 'clamp(10px, 1.5vw, 12px)',
+                letterSpacing: '4px',
+                color: 'var(--color-text-muted)',
+                textTransform: 'uppercase',
+              }}>
+                Top giovani talenti italiani · Under 23 · Stagione 2025/26
+              </p>
+            </div>
+
+            {/* Search button */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="shrink-0 flex items-center gap-2 transition-all"
+              style={{
+                padding: '8px 16px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 10,
+                color: 'var(--color-text-muted)',
+                fontFamily: 'var(--font-label)',
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.borderColor = 'rgba(0,255,135,0.4)';
+                el.style.color = 'var(--color-neon)';
+                el.style.boxShadow = '0 0 16px rgba(0,255,135,0.15)';
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.borderColor = 'var(--color-border)';
+                el.style.color = 'var(--color-text-muted)';
+                el.style.boxShadow = 'none';
+              }}
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="hidden sm:inline">Cerca</span>
+            </button>
           </div>
 
-          {/* Bottone cerca */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/50 hover:text-white/80 transition-all text-sm sm:min-w-[180px]"
+          {/* ── Tab navigation (pill style) ─────────────────────────────────── */}
+          <div
+            className="flex gap-1 overflow-x-auto"
+            style={{
+              padding: '4px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 12,
+              width: 'fit-content',
+              maxWidth: '100%',
+            }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <span className="hidden sm:inline">Cerca</span>
-          </button>
-
-        </div>
-
-        {/* Tab navigation — scrollabile su mobile */}
-        <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full sm:w-fit overflow-x-auto">
-          {([
-            {
-              id: 'classifiche', label: 'Classifiche',
-              icon: (
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              ),
-            },
-            {
-              id: 'formazione', label: 'Formazione',
-              icon: (
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              ),
-            },
-            {
-              id: 'vivai', label: 'Vivai',
-              icon: (
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              ),
-            },
-            {
-              id: 'minutaggio', label: 'Minutaggio',
-              icon: (
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              ),
-            },
-          ] as { id: Tab; label: string; icon: ReactNode }[]).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-[#FFD700] text-black font-semibold'
-                  : 'text-white/50 hover:text-white/80'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+            {([
+              {
+                id: 'home', label: 'Home',
+                icon: (
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                ),
+              },
+              {
+                id: 'classifiche', label: 'Classifiche',
+                icon: (
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                ),
+              },
+              {
+                id: 'formazione', label: 'Formazione',
+                icon: (
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                ),
+              },
+              {
+                id: 'vivai', label: 'Vivai',
+                icon: (
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                ),
+              },
+              {
+                id: 'minutaggio', label: 'Minutaggio',
+                icon: (
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ),
+              },
+            ] as { id: Tab; label: string; icon: ReactNode }[]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="flex items-center justify-center gap-1.5 whitespace-nowrap transition-all"
+                style={activeTab === tab.id ? {
+                  padding: '7px 18px',
+                  borderRadius: 8,
+                  background: 'var(--color-neon)',
+                  color: '#050508',
+                  fontFamily: 'var(--font-label)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 0 16px rgba(0,255,135,0.35)',
+                } : {
+                  padding: '7px 18px',
+                  borderRadius: 8,
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.4)',
+                  fontFamily: 'var(--font-label)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                }}
+                onMouseEnter={e => {
+                  if (activeTab !== tab.id) {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-neon)';
+                    (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(0,255,135,0.3)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (activeTab !== tab.id) {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)';
+                    (e.currentTarget as HTMLButtonElement).style.border = 'none';
+                  }
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
       {/* Banner: dati mancanti */}
       {staticMissing && !loading && (
         <div className="px-6 pb-2 max-w-7xl mx-auto">
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4 flex items-start gap-3">
-            <span className="text-amber-400 text-lg shrink-0">⚠️</span>
+          <div className="flex items-start gap-3 rounded-xl px-5 py-4"
+            style={{ background: 'rgba(255,160,0,0.08)', border: '1px solid rgba(255,160,0,0.25)' }}>
+            <span style={{ color: '#FFD700', fontSize: 16, flexShrink: 0 }}>⚠</span>
             <div>
-              <p className="text-amber-300 text-sm font-medium">Nessun dato disponibile</p>
-              <p className="text-amber-300/60 text-xs mt-0.5">
-                Esegui <code className="bg-white/10 px-1 rounded">npm run fetch-data</code> nel terminale per scaricare i dati dall'API.
+              <p style={{ fontFamily: 'var(--font-label)', fontSize: 13, fontWeight: 700, letterSpacing: '1px', color: '#FFD700' }}>
+                Nessun dato disponibile
+              </p>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'rgba(255,215,0,0.5)', marginTop: 3 }}>
+                Esegui <code style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 6px', borderRadius: 4 }}>npm run fetch-data</code> nel terminale per scaricare i dati.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Loading progress */}
+      {/* Loading spinner */}
       {loading && (
-        <div className="px-6 pb-4 max-w-7xl mx-auto">
-          <div className="bg-[#13131e] border border-[#FFD700]/20 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#FFD700] animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-                <span className="text-[#FFD700]/80 text-sm font-medium">
-                  {currentName ? `Carico ${currentName}…` : 'Carico campionati…'}
-                </span>
-              </div>
-              <span className="text-white/30 text-xs">
-                {allLeagueIds.length - pendingLeagues.length}/{allLeagueIds.length} completati
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {allLeagueIds.map(id => {
-                const p = progress.get(id);
-                const isDone = results.has(id);
-                const hasError = results.get(id)?.error;
-                const isCached = readCache(id) || p?.status === 'cached';
-                let dot = 'bg-white/10', label = 'text-white/30', suffix = '';
-                if (isDone && hasError)       { dot = 'bg-red-400';              label = 'text-red-400';   }
-                else if (isDone && isCached)  { dot = 'bg-blue-400';             label = 'text-blue-300';  suffix = ' ✓ cache'; }
-                else if (isDone)              { dot = 'bg-green-400';            label = 'text-green-400'; suffix = ' ✓'; }
-                else if (p?.status === 'fetching') { dot = 'bg-[#FFD700] animate-pulse'; label = 'text-[#FFD700]'; }
-                return (
-                  <span key={id} className={`flex items-center gap-1.5 text-xs ${label}`}>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                    {LEAGUE_NAMES[id]}{suffix}
-                  </span>
-                );
-              })}
-            </div>
-            {currentlyFetching?.waitingSeconds && (
-              <p className="text-white/30 text-xs mt-2">
-                ⏳ Attendo {currentlyFetching.waitingSeconds}s prima del prossimo campionato (rate limit: 10 req/min)
-              </p>
-            )}
-          </div>
+        <div className="flex items-center justify-center gap-2 px-6 pb-4">
+          <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--color-neon)' }}>
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+          <span style={{ fontFamily: 'var(--font-label)', fontSize: 12, letterSpacing: '2px', color: 'rgba(255,255,255,0.3)' }}>
+            CARICAMENTO DATI…
+          </span>
         </div>
       )}
 
@@ -313,13 +357,24 @@ export default function App() {
         onPositionChange={setPositionFilter}
         ageFilter={ageFilter}
         onAgeChange={setAgeFilter}
-        onRefresh={API_KEY ? () => fetchData(true) : undefined}
+        onRefresh={undefined}
         loading={loading}
       />
 
+      {/* TAB: Home */}
+      {activeTab === 'home' && (
+        <main className="max-w-7xl mx-auto">
+          <DashboardPage
+            players={allFilteredPlayers}
+            onPlayerClick={setSelectedPlayer}
+            loading={loading}
+          />
+        </main>
+      )}
+
       {/* TAB: Classifiche */}
       {activeTab === 'classifiche' && (
-        <main className="max-w-7xl mx-auto px-6 py-8 space-y-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
           {DISPLAY_GROUPS.map(group => {
 
             if (group.type === 'single') {
@@ -357,24 +412,37 @@ export default function App() {
                   className="flex items-center gap-3 mb-2 cursor-pointer select-none"
                   onClick={() => toggleGroup(group.name)}
                 >
-                  <h2 className="font-[Oswald] text-2xl font-bold text-white tracking-wide uppercase">
+                  <div style={{
+                    width: 4, height: 28, borderRadius: 2, flexShrink: 0,
+                    background: 'linear-gradient(to bottom, var(--color-neon), var(--color-neon-alt))',
+                    boxShadow: '0 0 10px rgba(0,255,135,0.5)',
+                  }} />
+                  <h2 style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 'clamp(20px, 3vw, 28px)',
+                    color: '#ffffff',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1,
+                  }}>
                     {group.name}
                   </h2>
                   <svg
-                    className={`w-4 h-4 text-white/30 transition-transform duration-200 shrink-0 ${isOpen ? '' : '-rotate-90'}`}
+                    className={`w-4 h-4 transition-transform duration-200 shrink-0 ${isOpen ? '' : '-rotate-90'}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    style={{ color: 'rgba(255,255,255,0.2)' }}
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                  <div className="flex-1 h-px bg-linear-to-r from-white/10 to-transparent" />
-                  <span className="text-xs text-white/20 font-[Inter]">
+                  <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(0,255,135,0.18), rgba(0,212,255,0.08) 40%, transparent)' }} />
+                  <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, letterSpacing: '1.5px', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>
                     {group.children.filter(c => selectedLeagues.has(c.id)).length} gironi
                   </span>
                 </div>
 
                 {/* Gironi */}
                 {isOpen && (
-                  <div className="space-y-8 pl-4 border-l border-white/8 mt-4">
+                  <div className="space-y-8 pl-4 mt-4" style={{ borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
                     {group.children.map(child => {
                       if (!selectedLeagues.has(child.id)) return null;
                       const result = results.get(child.id);
@@ -439,13 +507,8 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-6 px-6 text-center mt-8">
-        <p className="text-white/20 text-xs">
-          Chiamate API usate in questa sessione:{' '}
-          <span className="font-[Oswald] text-[#FFD700]/60 text-sm">{apiCalls}</span>
-          <span className="text-white/10"> / ~100 richieste gratuite al giorno</span>
-        </p>
-        <p className="text-white/10 text-xs mt-1">
+      <footer className="py-8 px-6 text-center mt-8" style={{ borderTop: '1px solid var(--color-border)' }}>
+        <p style={{ fontFamily: 'var(--font-label)', fontSize: 11, letterSpacing: '1px', color: 'rgba(255,255,255,0.1)', marginTop: 4 }}>
           Dati via API-Football · Stagione 2025/26
           {dataFetchedAt && (
             <> · Aggiornato il {new Date(dataFetchedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</>

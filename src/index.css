@@ -1,16 +1,131 @@
 @import "tailwindcss";
 
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --color-bg:           #050508;
+  --color-bg-card:      #0d0d14;
+  --color-bg-elevated:  #13131e;
+  --color-neon:         #00ff87;
+  --color-neon-alt:     #00d4ff;
+  --color-gold:         #FFD700;
+  --color-accent:       #ff3d5a;
+  --color-text:         #ffffff;
+  --color-text-muted:   rgba(255,255,255,0.45);
+  --color-border:       rgba(255,255,255,0.07);
+
+  --font-display: 'Bebas Neue', 'Oswald', sans-serif;
+  --font-label:   'Barlow Condensed', 'Oswald', sans-serif;
+  --font-body:    'Inter', sans-serif;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: #0a0a0f;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100dvh;
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────────── */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,255,135,0.4), 0 0 20px rgba(0,255,135,0.15); }
+  50%       { box-shadow: 0 0 16px rgba(0,255,135,0.7), 0 0 40px rgba(0,255,135,0.25); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+@keyframes diagonal-sweep {
+  0%   { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(400%) skewX(-20deg); }
+}
+
+/* ── Typography helpers ──────────────────────────────────────────────────────── */
+.font-display   { font-family: var(--font-display); }
+.font-label     { font-family: var(--font-label); }
+.font-body      { font-family: var(--font-body); }
+
+/* Section titles */
+.title-section {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 56px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+/* Stat labels */
+.label-stat {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ── Utility ─────────────────────────────────────────────────────────────────── */
+.neon-glow-green {
+  box-shadow: 0 0 12px rgba(0,255,135,0.35), 0 0 30px rgba(0,255,135,0.12);
+}
+
+.neon-glow-blue {
+  box-shadow: 0 0 12px rgba(0,212,255,0.35), 0 0 30px rgba(0,212,255,0.12);
+}
+
+.glass {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-dark {
+  background: rgba(5,5,8,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.animate-slide-down { animation: slide-down 0.25s ease both; }
+.animate-scale-in   { animation: scale-in 0.2s ease both; }
+
+/* ── FUT card diagonal accent ────────────────────────────────────────────────── */
+.card-diagonal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.022) 0%, transparent 55%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Neon outline text ───────────────────────────────────────────────────────── */
+.text-outline-neon {
+  -webkit-text-stroke: 2px var(--color-neon);
+  color: transparent;
+}
+
+.text-outline-white {
+  -webkit-text-stroke: 2px white;
+  color: transparent;
 }
