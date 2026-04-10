@@ -116,19 +116,32 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
     >
       {/* Wrapper perspective per effetto 3D */}
       <div style={{ perspective: '900px', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+
+      {/* Glow esterno */}
+      <div style={{
+        position: 'relative',
+        filter: 'drop-shadow(0 0 18px rgba(0,255,135,0.35)) drop-shadow(0 0 40px rgba(0,212,255,0.15))',
+      }}>
+
+      {/* Bordo gradiente — layer dietro la card */}
+      <div style={{
+        position: 'absolute', inset: -2, zIndex: 0,
+        background: 'linear-gradient(135deg, #00ff87 0%, #00d4ff 35%, #a855f7 65%, #00ff87 100%)',
+        clipPath: 'polygon(16px 0%, calc(100% - 16px) 0%, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)',
+      }} />
+
       <div
         ref={cardRef}
         className="relative w-full overflow-hidden shadow-2xl"
         style={{
           background: 'linear-gradient(145deg, #020408 0%, #050a10 35%, #071a12 65%, #030608 100%)',
-          border: '1px solid rgba(0,255,135,0.2)',
-          borderRadius: 20,
+          clipPath: 'polygon(14px 0%, calc(100% - 14px) 0%, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px)',
           maxHeight: '92vh',
           overflowY: 'auto',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,255,135,0.1), 0 0 50px rgba(0,255,135,0.08)',
           transformStyle: 'preserve-3d',
           willChange: 'transform',
           cursor: 'default',
+          position: 'relative', zIndex: 1,
         }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -148,6 +161,17 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
             pointerEvents: 'none',
           }}
         />
+        {/* Graffi decorativi stile FIFA */}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none', opacity: 0.12 }} viewBox="0 0 480 700" preserveAspectRatio="none">
+          <line x1="0" y1="60"  x2="80"  y2="0"   stroke="white" strokeWidth="1.5"/>
+          <line x1="400" y1="0" x2="480" y2="60"  stroke="white" strokeWidth="1.5"/>
+          <line x1="0" y1="640" x2="80"  y2="700" stroke="white" strokeWidth="1.5"/>
+          <line x1="400" y1="700" x2="480" y2="640" stroke="white" strokeWidth="1.5"/>
+          <line x1="30"  y1="120" x2="160" y2="30"  stroke="white" strokeWidth="0.8" strokeDasharray="4 6"/>
+          <line x1="320" y1="30"  x2="460" y2="110" stroke="white" strokeWidth="0.8" strokeDasharray="4 6"/>
+          <line x1="20"  y1="200" x2="120" y2="140" stroke="white" strokeWidth="0.5"/>
+          <line x1="360" y1="140" x2="465" y2="200" stroke="white" strokeWidth="0.5"/>
+        </svg>
         {/* Shimmer radiale che segue il mouse */}
         {shimmer && (
           <div style={{
@@ -416,6 +440,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         </div>
         </div>{/* end z-index wrapper */}
       </div>{/* end card */}
+      </div>{/* end glow wrapper */}
       </div>{/* end perspective wrapper */}
     </div>
   );
