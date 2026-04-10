@@ -218,14 +218,12 @@ export default function App() {
 
           {/* ── Tab navigation (pill style) ─────────────────────────────────── */}
           <div
-            className="flex gap-1 overflow-x-auto"
+            className="flex gap-1 w-full sm:w-auto"
             style={{
               padding: '4px',
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid var(--color-border)',
               borderRadius: 12,
-              width: 'fit-content',
-              maxWidth: '100%',
             }}
           >
             {([
@@ -273,9 +271,9 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="flex items-center justify-center gap-1.5 whitespace-nowrap"
+                className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 whitespace-nowrap"
                 style={activeTab === tab.id ? {
-                  padding: '7px 18px',
+                  padding: '7px 12px',
                   borderRadius: 8,
                   background: 'var(--color-neon)',
                   color: '#050508',
@@ -288,7 +286,7 @@ export default function App() {
                   border: '1px solid transparent',
                   transition: 'color 0.15s, border-color 0.15s',
                 } : {
-                  padding: '7px 18px',
+                  padding: '7px 12px',
                   borderRadius: 8,
                   background: 'transparent',
                   color: 'rgba(255,255,255,0.4)',
@@ -314,7 +312,7 @@ export default function App() {
                 }}
               >
                 {tab.icon}
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
