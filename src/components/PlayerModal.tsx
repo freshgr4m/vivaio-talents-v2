@@ -136,120 +136,98 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
           }} />
         )}
         <div className="relative" style={{ zIndex: 2 }}>
-        {/* ── CARD HEADER: colored top band with photo ───────────────────── */}
-        <div className="relative overflow-hidden" style={{ minHeight: 200 }}>
+        {/* ── CARD HEADER: foto hero full-width ─────────────────────────── */}
+        <div className="relative overflow-hidden" style={{ height: 260 }}>
 
-          {/* Background: colored gradient + diagonal accent */}
-          <div className="absolute inset-0" style={{
-            background: `linear-gradient(145deg, ${posAccent.bg} 0%, rgba(13,13,20,0.95) 55%, #0d0d14 100%)`,
-          }} />
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: `radial-gradient(ellipse 80% 80% at 20% 50%, ${posAccent.glow} 0%, transparent 65%)`,
-            opacity: 0.35,
-          }} />
-          {/* Diagonal stripe */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: 'linear-gradient(125deg, transparent 45%, rgba(255,255,255,0.025) 55%, transparent 65%)',
-          }} />
-
-          <div className="relative z-10 flex items-end gap-0" style={{ padding: '20px 20px 0' }}>
-
-            {/* Photo — large, touching bottom edge */}
+          {/* Foto giocatore full-width come sfondo */}
+          {!imgError ? (
+            <img
+              src={player.photo}
+              alt={player.name}
+              onError={() => setImgError(true)}
+              style={{
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%',
+                objectFit: 'cover', objectPosition: 'top center',
+                filter: 'brightness(0.75)',
+              }}
+            />
+          ) : (
             <div style={{
-              width: 130, height: 155,
-              flexShrink: 0,
-              borderRadius: '12px 12px 0 0',
-              overflow: 'hidden',
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: posAccent.bg,
-              border: `1.5px solid ${posAccent.color}35`,
-              borderBottom: 'none',
-              alignSelf: 'flex-end',
+              fontFamily: 'var(--font-display)', fontSize: 72, color: posAccent.color,
             }}>
-              {!imgError ? (
-                <img
-                  src={player.photo}
-                  alt={player.name}
-                  onError={() => setImgError(true)}
-                  className="w-full h-full object-cover object-top"
-                />
-              ) : (
-                <div style={{
-                  width: '100%', height: '100%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontSize: 40, color: posAccent.color,
-                }}>
-                  {player.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                </div>
-              )}
+              {player.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
+          )}
 
-            {/* Right side: name, position, team */}
-            <div style={{ flex: 1, minWidth: 0, padding: '0 0 16px 16px' }}>
+          {/* Gradiente overlay dal basso per leggibilità */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(2,4,8,0.1) 0%, rgba(2,4,8,0.4) 50%, rgba(2,4,8,0.95) 100%)',
+            pointerEvents: 'none',
+          }} />
+          {/* Glow colorato posizione in alto a sinistra */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: `radial-gradient(ellipse 60% 60% at 10% 0%, ${posAccent.glow} 0%, transparent 60%)`,
+            opacity: 0.25, pointerEvents: 'none',
+          }} />
 
-              {/* Talent score — big number top right */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 56,
-                    color: '#FFD700',
-                    lineHeight: 1,
-                    textShadow: '0 0 24px rgba(255,215,0,0.6)',
-                  }}>
-                    {player.talentScore.toFixed(1)}
-                  </div>
-                  <div style={{
-                    fontFamily: 'var(--font-label)', fontSize: 9, fontWeight: 700,
-                    letterSpacing: '2.5px', textTransform: 'uppercase',
-                    color: 'rgba(255,215,0,0.4)',
-                  }}>
-                    Talent
-                  </div>
-                </div>
-              </div>
+          {/* Talent score — top right */}
+          <div style={{ position: 'absolute', top: 16, right: 16, textAlign: 'center' }}>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontSize: 60, color: '#FFD700',
+              lineHeight: 1, textShadow: '0 0 28px rgba(255,215,0,0.7)',
+            }}>
+              {player.talentScore.toFixed(1)}
+            </div>
+            <div style={{ fontFamily: 'var(--font-label)', fontSize: 9, fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,215,0,0.5)' }}>
+              Talent
+            </div>
+          </div>
 
-              {/* Position badge */}
-              <div style={{ marginBottom: 6 }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  background: posAccent.bg,
-                  border: `1px solid ${posAccent.color}50`,
-                  fontFamily: 'var(--font-label)', fontSize: 11, fontWeight: 700,
-                  letterSpacing: '1.5px', textTransform: 'uppercase', color: posAccent.color,
-                }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: posAccent.color, flexShrink: 0 }} />
-                  {posShort} · {posFull}
-                </span>
-              </div>
-
-              {/* Name */}
-              <h2 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(18px, 4vw, 24px)',
-                color: '#ffffff',
-                lineHeight: 1.05,
-                letterSpacing: '0.02em',
-                marginBottom: 8,
+          {/* Info in basso */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 20px 16px' }}>
+            {/* Position badge */}
+            <div style={{ marginBottom: 8 }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 10px', borderRadius: 6,
+                background: `${posAccent.color}22`, border: `1px solid ${posAccent.color}60`,
+                fontFamily: 'var(--font-label)', fontSize: 11, fontWeight: 700,
+                letterSpacing: '1.5px', textTransform: 'uppercase', color: posAccent.color,
               }}>
-                {player.name}
-              </h2>
-
-              {/* Team + age */}
-              <div className="flex items-center gap-2">
-                {player.teamLogo && <img src={player.teamLogo} alt="" className="w-5 h-5 object-contain shrink-0" />}
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 12, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: posAccent.color, flexShrink: 0 }} />
+                {posShort} · {posFull}
+              </span>
+            </div>
+            {/* Nome grande */}
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(26px, 6vw, 36px)',
+              color: '#ffffff',
+              lineHeight: 1,
+              letterSpacing: '0.03em',
+              marginBottom: 10,
+              textShadow: '0 2px 12px rgba(0,0,0,0.8)',
+            }}>
+              {player.name}
+            </h2>
+            {/* Stemma + team + età */}
+            <div className="flex items-center gap-3">
+              {player.teamLogo && (
+                <img src={player.teamLogo} alt="" style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }} />
+              )}
+              <div>
+                <div style={{ fontFamily: 'var(--font-label)', fontSize: 13, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.5px', fontWeight: 700 }}>
                   {player.teamName}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.5px' }}>
-                  🇮🇹 {player.age} anni
-                </span>
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.5px' }}>
-                  {player.leagueName}
-                </span>
+                </div>
+                <div style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>
+                  🇮🇹 {player.age} anni · {player.leagueName}
+                </div>
               </div>
             </div>
           </div>
