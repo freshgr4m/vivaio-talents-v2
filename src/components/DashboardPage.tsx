@@ -463,7 +463,7 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
       {/* ── BANNER full-bleed ─────────────────────────────────────────────── */}
       <div ref={bannerRef} data-section style={{ width: '100%', lineHeight: 0, position: 'relative', overflow: 'hidden' }}>
         <img
-          src="/vivaio-talents-v2/banner3.png"
+          src="/vivaio-talents-v2/banner4.png"
           alt="Vivaio Talents Banner"
           style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: 340 }}
         />
