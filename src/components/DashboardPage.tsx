@@ -515,7 +515,7 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
               {!bgImg && <div style={{ position: 'absolute', top: -10, right: -10, width: 60, height: 60, borderRadius: '50%', background: `${color}10`, pointerEvents: 'none' }} />}
               <div
                 data-count={count}
-                style={{ position: 'relative', fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 48px)', color, lineHeight: 1, textShadow: `0 0 20px ${color}60` }}
+                style={{ position: 'relative', fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 48px)', color: bgImg ? '#fff' : color, lineHeight: 1, textShadow: bgImg ? '0 0 20px rgba(255,255,255,0.4)' : `0 0 20px ${color}60` }}
               >
                 {value}
               </div>
