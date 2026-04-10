@@ -29,8 +29,8 @@ export function SearchOverlay({ allPlayers, onSelect, onClose }: Props) {
   const q = query.trim().toLowerCase();
   const results = q.length < 2 ? [] : allPlayers
     .filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.teamName.toLowerCase().includes(q)
+      (p.name ?? '').toLowerCase().includes(q) ||
+      (p.teamName ?? '').toLowerCase().includes(q)
     )
     .sort((a, b) => b.talentScore - a.talentScore)
     .slice(0, 20);
