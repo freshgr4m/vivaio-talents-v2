@@ -331,7 +331,9 @@ interface Props {
 }
 
 export function DashboardPage({ players, onPlayerClick, loading }: Props) {
-  const pageRef = useRef<HTMLDivElement>(null);
+  const pageRef    = useRef<HTMLDivElement>(null);
+  const bannerRef  = useRef<HTMLDivElement>(null);
+  const statsRef   = useRef<HTMLDivElement>(null);
 
   // ── Computed data ───────────────────────────────────────────────────────────
 
@@ -380,14 +382,54 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
     .sort((a, b) => b.totalScore - a.totalScore)
     .slice(0, 3);
 
-  // ── GSAP entrance ───────────────────────────────────────────────────────────
+  // ── GSAP entrance + counter + parallax ─────────────────────────────────────
   useEffect(() => {
     if (!pageRef.current || loading) return;
+
+    // 1. Staggered section entrance
     const sections = pageRef.current.querySelectorAll('[data-section]');
     gsap.fromTo(sections,
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: 'power3.out' }
     );
+
+    // 2. Banner scale-in
+    if (bannerRef.current) {
+      gsap.fromTo(bannerRef.current,
+        { scale: 1.04, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.9, ease: 'power2.out' }
+      );
+    }
+
+    // 3. Count-up on stat numbers
+    if (statsRef.current) {
+      const counters = statsRef.current.querySelectorAll<HTMLElement>('[data-count]');
+      counters.forEach(el => {
+        const target = parseFloat(el.dataset.count ?? '0');
+        const isFloat = !Number.isInteger(target);
+        const proxy = { val: 0 };
+        gsap.to(proxy, {
+          val: target,
+          duration: 1.4,
+          ease: 'power2.out',
+          delay: 0.4,
+          onUpdate: () => {
+            el.textContent = isFloat
+              ? proxy.val.toFixed(1)
+              : String(Math.round(proxy.val));
+          },
+        });
+      });
+    }
+
+    // 4. Top-player rows slide in from left
+    if (pageRef.current) {
+      const rows = pageRef.current.querySelectorAll('[data-row]');
+      gsap.fromTo(rows,
+        { opacity: 0, x: -18 },
+        { opacity: 1, x: 0, duration: 0.45, stagger: 0.07, ease: 'power2.out', delay: 0.3 }
+      );
+    }
   }, [loading, players.length]);
 
   // ── Empty / loading state ───────────────────────────────────────────────────
@@ -419,9 +461,9 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
     <div ref={pageRef}>
 
       {/* ── BANNER full-bleed ─────────────────────────────────────────────── */}
-      <div data-section style={{ width: '100%', lineHeight: 0, position: 'relative' }}>
+      <div ref={bannerRef} data-section style={{ width: '100%', lineHeight: 0, position: 'relative', overflow: 'hidden' }}>
         <img
-          src="/vivaio-talents-v2/banner2.png"
+          src="/vivaio-talents-v2/banner3.png"
           alt="Vivaio Talents Banner"
           style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: 340 }}
         />
@@ -442,15 +484,15 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
 
       {/* ── 1. NUMERI DELLA STAGIONE ──────────────────────────────────────── */}
-      <section data-section>
+      <section data-section ref={statsRef}>
         <SectionHeader title="Numeri della stagione" sub="Stagione 2025/26 · U23 italiani" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Talenti monitorati', value: players.length,  color: 'var(--color-neon)',     suffix: '' },
-            { label: 'Gol segnati',        value: totalGoals,       color: '#ff3d5a',               suffix: '' },
-            { label: 'Assist totali',      value: totalAssists,     color: '#00d4ff',               suffix: '' },
-            { label: 'Score medio',        value: avgScore,         color: '#FFD700',               suffix: '' },
-          ].map(({ label, value, color }) => (
+            { label: 'Talenti monitorati', value: players.length,        count: players.length,          color: 'var(--color-neon)' },
+            { label: 'Gol segnati',        value: totalGoals,            count: totalGoals,               color: '#ff3d5a'           },
+            { label: 'Assist totali',      value: totalAssists,          count: totalAssists,             color: '#00d4ff'           },
+            { label: 'Score medio',        value: avgScore,              count: parseFloat(avgScore as string) || 0, color: '#FFD700' },
+          ].map(({ label, value, count, color }) => (
             <div key={label} style={{
               background: `linear-gradient(135deg, ${color}0a 0%, var(--color-bg-elevated) 70%)`,
               border: '1px solid var(--color-border)',
@@ -461,7 +503,10 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
             }}>
               {/* Decorative glow dot */}
               <div style={{ position: 'absolute', top: -10, right: -10, width: 60, height: 60, borderRadius: '50%', background: `${color}10`, pointerEvents: 'none' }} />
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 48px)', color, lineHeight: 1, textShadow: `0 0 20px ${color}40` }}>
+              <div
+                data-count={count}
+                style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 48px)', color, lineHeight: 1, textShadow: `0 0 20px ${color}40` }}
+              >
                 {value}
               </div>
               <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>
@@ -480,7 +525,9 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
           <SectionHeader title="Top 5 Talenti" sub="Migliore talent score overall" />
           <div className="space-y-2">
             {top5.map((p, i) => (
-              <TopPlayerRow key={`${p.id}-${p.leagueId}`} player={p} rank={i + 1} onClick={() => onPlayerClick(p)} />
+              <div key={`${p.id}-${p.leagueId}`} data-row>
+                <TopPlayerRow player={p} rank={i + 1} onClick={() => onPlayerClick(p)} />
+              </div>
             ))}
           </div>
         </div>
