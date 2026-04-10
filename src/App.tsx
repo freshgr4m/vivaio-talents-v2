@@ -12,6 +12,7 @@ import { Filters } from './components/Filters';
 import { FormationPage } from './components/FormationPage';
 import { VivaiPage } from './components/VivaiPage';
 import { PlayerModal } from './components/PlayerModal';
+import { SearchOverlay } from './components/SearchOverlay';
 import { LeagueSection } from './components/LeagueSection';
 import type { AgeFilter, Player, PositionFilter } from './types/player';
 import { LEAGUES } from './types/player';
@@ -94,6 +95,7 @@ export default function App() {
   const [staticMissing, setStaticMissing]     = useState(false);
   const [dataFetchedAt, setDataFetchedAt]     = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer]   = useState<Player | null>(null);
+  const [searchOpen, setSearchOpen]           = useState(false);
 
   const hasFetched = useRef(false);
 
@@ -161,22 +163,33 @@ export default function App() {
     <div className="min-h-screen bg-[#0a0a0f] font-[Inter] text-white">
 
       {/* Header */}
-      <header className="px-6 pt-8 pb-4 max-w-7xl mx-auto">
-        <div className="flex items-end gap-3 mb-6">
-          <div>
-            <h1 className="font-[Oswald] text-4xl font-bold tracking-wide text-white uppercase">
+      <header className="px-4 sm:px-6 pt-5 sm:pt-8 pb-3 sm:pb-4 max-w-7xl mx-auto">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="font-[Oswald] text-2xl sm:text-4xl font-bold tracking-wide text-white uppercase leading-tight">
               Vivaio Talents
             </h1>
-            <p className="text-white/40 text-sm mt-1">
-              Top giovani talenti italiani Under 23 · Stagione 2025/26
+            <p className="text-white/40 text-xs sm:text-sm mt-0.5">
+              U23 italiani · Stagione 2025/26
             </p>
           </div>
-          <div className="flex-1" />
-          <span className="text-3xl">🇮🇹</span>
+
+          {/* Bottone cerca */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/50 hover:text-white/80 transition-all text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="hidden sm:inline">Cerca</span>
+          </button>
+
+          <span className="text-2xl sm:text-3xl">🇮🇹</span>
         </div>
 
-        {/* Tab navigation */}
-        <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-fit">
+        {/* Tab navigation — scrollabile su mobile */}
+        <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full sm:w-fit overflow-x-auto">
           {([
             { id: 'classifiche', label: '📊 Classifiche' },
             { id: 'formazione',  label: '⚽ Formazione'  },
@@ -185,7 +198,7 @@ export default function App() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-[#FFD700] text-black font-semibold'
                   : 'text-white/50 hover:text-white/80'
@@ -365,6 +378,15 @@ export default function App() {
         <main className="max-w-7xl mx-auto px-6 py-8">
           <VivaiPage players={allFilteredPlayers} />
         </main>
+      )}
+
+      {/* Search overlay */}
+      {searchOpen && (
+        <SearchOverlay
+          allPlayers={allFilteredPlayers}
+          onSelect={p => { setSelectedPlayer(p); }}
+          onClose={() => setSearchOpen(false)}
+        />
       )}
 
       {/* Modal giocatore */}
