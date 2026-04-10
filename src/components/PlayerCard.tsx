@@ -21,21 +21,29 @@ interface PlayerCardProps {
   onClick?: (player: Player) => void;
 }
 
+function tierStyle(rank: number): { border: string; bg: string; rankColor: string } {
+  if (rank === 1) return { border: 'border-l-[#FFD700]', bg: 'bg-[#FFD700]/[0.04]', rankColor: 'text-[#FFD700]/70' };
+  if (rank <= 3)  return { border: 'border-l-[#C0C0C0]', bg: 'bg-white/[0.03]',     rankColor: 'text-[#C0C0C0]/70' };
+  if (rank <= 5)  return { border: 'border-l-[#CD7F32]', bg: 'bg-white/[0.02]',     rankColor: 'text-[#CD7F32]/70' };
+  return                  { border: 'border-l-transparent', bg: '',                  rankColor: 'text-white/20'      };
+}
+
 export function PlayerCard({ player, rank, onClick }: PlayerCardProps) {
   const [imgError, setImgError] = useState(false);
 
   const posLabel = POSITION_LABELS[player.position] ?? player.position?.slice(0, 3).toUpperCase() ?? '—';
   const posColor = POSITION_COLORS[player.position] ?? 'text-white/50 border-white/20 bg-white/5';
+  const tier = tierStyle(rank);
 
   return (
     <div
-      className="group flex items-center gap-4 bg-[#13131e] hover:bg-[#1a1a2a] border border-white/5 hover:border-white/15 rounded-xl p-4 transition-all duration-200 cursor-pointer"
+      className={`group flex items-center gap-4 border-l-2 ${tier.border} ${tier.bg} bg-[#13131e] hover:bg-[#1a1a2a] border border-white/5 hover:border-white/15 rounded-xl p-4 transition-all duration-200 cursor-pointer`}
       onClick={() => onClick?.(player)}
     >
 
       {/* Rank */}
       <div className="w-7 text-center shrink-0">
-        <span className="font-[Oswald] text-lg font-bold text-white/20 group-hover:text-white/40 transition-colors">
+        <span className={`font-[Oswald] text-lg font-bold transition-colors ${tier.rankColor}`}>
           {rank}
         </span>
       </div>
