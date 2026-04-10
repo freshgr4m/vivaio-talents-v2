@@ -77,7 +77,9 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         className="relative w-full overflow-hidden shadow-2xl"
         style={{
           maxWidth: 480,
-          background: 'var(--color-bg-elevated)',
+          backgroundImage: 'url(/vivaio-talents-v2/bgcard.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           border: `1px solid ${posAccent.color}30`,
           borderRadius: 20,
           maxHeight: '92vh',
@@ -86,6 +88,9 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Overlay scuro sopra la texture */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(5,5,8,0.82)', zIndex: 0 }} />
+        <div className="relative" style={{ zIndex: 1 }}>
         {/* ── CARD HEADER: colored top band with photo ───────────────────── */}
         <div className="relative overflow-hidden" style={{ minHeight: 200 }}>
 
@@ -343,6 +348,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
             Chiudi
           </button>
         </div>
+        </div>{/* end z-index wrapper */}
       </div>
     </div>
   );
