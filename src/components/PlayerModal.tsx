@@ -122,7 +122,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
             position: 'absolute', inset: 0, width: '100%', height: '100%',
             objectFit: 'cover', objectPosition: 'center',
             filter: 'grayscale(100%) brightness(1.1) contrast(0.9)',
-            opacity: 0.07,
+            opacity: 0.03,
             zIndex: 0,
             pointerEvents: 'none',
           }}
