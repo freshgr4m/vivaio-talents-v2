@@ -131,7 +131,7 @@ export default function App() {
       {/* ── HERO HEADER ─────────────────────────────────────────────────────── */}
       <header
         className="relative overflow-hidden"
-        style={{ background: 'var(--color-bg)', minHeight: 'clamp(220px, 30vh, 340px)' }}
+        style={{ background: 'var(--color-bg)' }}
       >
         {/* Diagonal neon band */}
         <div
