@@ -101,12 +101,12 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         ref={cardRef}
         className="relative w-full overflow-hidden shadow-2xl"
         style={{
-          background: `linear-gradient(145deg, #0a0e1a 0%, #080b14 40%, ${posAccent.color}12 70%, #050508 100%)`,
-          border: `1px solid ${posAccent.color}40`,
+          background: 'linear-gradient(145deg, #020408 0%, #050a10 35%, #071a12 65%, #030608 100%)',
+          border: '1px solid rgba(0,255,135,0.2)',
           borderRadius: 20,
           maxHeight: '92vh',
           overflowY: 'auto',
-          boxShadow: `0 24px 60px rgba(0,0,0,0.8), 0 0 0 1px ${posAccent.color}20, 0 0 50px ${posAccent.glow}`,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,255,135,0.1), 0 0 50px rgba(0,255,135,0.08)',
           transformStyle: 'preserve-3d',
           willChange: 'transform',
           cursor: 'default',
@@ -131,7 +131,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         {shimmer && (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
-            background: `radial-gradient(ellipse 60% 50% at ${shimmer.x}% ${shimmer.y}%, ${posAccent.color}18 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse 60% 50% at ${shimmer.x}% ${shimmer.y}%, rgba(0,255,135,0.12) 0%, rgba(0,212,255,0.06) 50%, transparent 70%)`,
             transition: 'background 0.05s',
           }} />
         )}
