@@ -600,26 +600,31 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
 
       {/* ── 5. QUICK INFO footer ────────────────────────────────────────────── */}
       <section data-section>
-        <div style={{
-          background: 'var(--color-bg-elevated)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 14,
-          padding: '16px 20px',
-          display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center',
-        }}>
+        <SectionHeader title="Statistiche rapide" />
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {[
-            { label: 'ETÀ MEDIA XI', value: `${avgAge} anni` },
-            { label: 'LIGHE COPERTE', value: leagueSpotlight.length },
-            { label: 'GOL / ASSIST RATIO', value: totalAssists > 0 ? (totalGoals / totalAssists).toFixed(2) : '—' },
-            { label: 'GIOCATORI UNDER 20', value: players.filter(p => p.age <= 20).length },
-            { label: 'ATTACCANTI', value: players.filter(p => p.position === 'Attacker').length },
-            { label: 'CENTROCAMPISTI', value: players.filter(p => p.position === 'Midfielder').length },
-            { label: 'DIFENSORI', value: players.filter(p => p.position === 'Defender').length },
-            { label: 'PORTIERI', value: players.filter(p => p.position === 'Goalkeeper').length },
-          ].map(({ label, value }) => (
-            <div key={label} style={{ textAlign: 'center', minWidth: 80 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#fff', lineHeight: 1 }}>{value}</div>
-              <div style={{ fontFamily: 'var(--font-label)', fontSize: 9, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>{label}</div>
+            { label: 'Età media',   value: `${avgAge}`,                                                           suffix: 'anni',  color: 'var(--color-neon)' },
+            { label: 'Leghe',       value: leagueSpotlight.length,                                                suffix: '',      color: '#00d4ff'           },
+            { label: 'G/A ratio',   value: totalAssists > 0 ? (totalGoals / totalAssists).toFixed(2) : '—',       suffix: '',      color: '#FFD700'           },
+            { label: 'Under 20',    value: players.filter(p => p.age <= 20).length,                               suffix: '',      color: '#ff3d5a'           },
+            { label: 'Attaccanti',  value: players.filter(p => p.position === 'Attacker').length,                 suffix: '',      color: '#ff3d5a'           },
+            { label: 'Centrocam.',  value: players.filter(p => p.position === 'Midfielder').length,               suffix: '',      color: '#00d4ff'           },
+            { label: 'Difensori',   value: players.filter(p => p.position === 'Defender').length,                 suffix: '',      color: 'var(--color-neon)' },
+            { label: 'Portieri',    value: players.filter(p => p.position === 'Goalkeeper').length,               suffix: '',      color: '#FFD700'           },
+          ].map(({ label, value, suffix, color }) => (
+            <div key={label} style={{
+              background: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 10,
+              padding: '12px 10px',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 4vw, 28px)', color, lineHeight: 1, textShadow: `0 0 12px ${color}40` }}>
+                {value}{suffix && <span style={{ fontSize: '0.55em', marginLeft: 3, opacity: 0.7 }}>{suffix}</span>}
+              </div>
+              <div style={{ fontFamily: 'var(--font-label)', fontSize: 9, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: 5 }}>
+                {label}
+              </div>
             </div>
           ))}
         </div>
