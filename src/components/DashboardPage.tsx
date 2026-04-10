@@ -488,28 +488,38 @@ export function DashboardPage({ players, onPlayerClick, loading }: Props) {
         <SectionHeader title="Numeri della stagione" sub="Stagione 2025/26 · U23 italiani" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Talenti monitorati', value: players.length,        count: players.length,          color: 'var(--color-neon)' },
-            { label: 'Gol segnati',        value: totalGoals,            count: totalGoals,               color: '#ff3d5a'           },
-            { label: 'Assist totali',      value: totalAssists,          count: totalAssists,             color: '#00d4ff'           },
-            { label: 'Score medio',        value: avgScore,              count: parseFloat(avgScore as string) || 0, color: '#FFD700' },
-          ].map(({ label, value, count, color }) => (
+            { label: 'Talenti monitorati', value: players.length,        count: players.length,                      color: 'var(--color-neon)', bgImg: null         },
+            { label: 'Gol segnati',        value: totalGoals,            count: totalGoals,                          color: '#ff3d5a',           bgImg: 'card1.png'  },
+            { label: 'Assist totali',      value: totalAssists,          count: totalAssists,                        color: '#00d4ff',           bgImg: 'card2.png'  },
+            { label: 'Score medio',        value: avgScore,              count: parseFloat(avgScore as string) || 0, color: '#FFD700',           bgImg: 'card3.png'  },
+          ].map(({ label, value, count, color, bgImg }) => (
             <div key={label} style={{
-              background: `linear-gradient(135deg, ${color}0a 0%, var(--color-bg-elevated) 70%)`,
+              background: bgImg
+                ? `url(/vivaio-talents-v2/${bgImg}) center/cover no-repeat`
+                : `linear-gradient(135deg, ${color}0a 0%, var(--color-bg-elevated) 70%)`,
               border: '1px solid var(--color-border)',
               borderRadius: 14,
               padding: '18px 16px',
               textAlign: 'center',
               position: 'relative', overflow: 'hidden',
             }}>
+              {/* Overlay per leggibilità (solo card con immagine) */}
+              {bgImg && (
+                <div style={{
+                  position: 'absolute', inset: 0, borderRadius: 14,
+                  background: 'linear-gradient(135deg, rgba(5,5,8,0.72) 0%, rgba(5,5,8,0.55) 100%)',
+                  pointerEvents: 'none',
+                }} />
+              )}
               {/* Decorative glow dot */}
-              <div style={{ position: 'absolute', top: -10, right: -10, width: 60, height: 60, borderRadius: '50%', background: `${color}10`, pointerEvents: 'none' }} />
+              {!bgImg && <div style={{ position: 'absolute', top: -10, right: -10, width: 60, height: 60, borderRadius: '50%', background: `${color}10`, pointerEvents: 'none' }} />}
               <div
                 data-count={count}
-                style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 48px)', color, lineHeight: 1, textShadow: `0 0 20px ${color}40` }}
+                style={{ position: 'relative', fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 48px)', color, lineHeight: 1, textShadow: `0 0 20px ${color}60` }}
               >
                 {value}
               </div>
-              <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>
+              <div style={{ position: 'relative', fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
                 {label}
               </div>
             </div>
