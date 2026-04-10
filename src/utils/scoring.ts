@@ -32,14 +32,12 @@ export function parsePlayer(
 
   const nationality = raw.player.nationality;
   const minutes = stat.games.minutes ?? 0;
+  const appearances = stat.games.appearences ?? 0;
   const goals = stat.goals.total ?? 0;
   const assists = stat.goals.assists ?? 0;
   const ratingRaw = parseFloat(stat.games.rating ?? '0') || 0;
-
   if (ageAtSeasonStart > 23) return null;
   if (nationality !== 'Italy') return null;
-  // Filtra solo se i minuti sono noti e insufficienti (alcuni campionati non espongono i minuti)
-  if (minutes > 0 && minutes < 90) return null;
 
   const talentScore = parseFloat(calcTalentScore(goals, assists, minutes, ratingRaw).toFixed(2));
 
@@ -57,6 +55,7 @@ export function parsePlayer(
     goals,
     assists,
     minutesPlayed: minutes,
+    appearances,
     rating: ratingRaw,
     talentScore,
   };

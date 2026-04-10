@@ -43,6 +43,7 @@ export interface Player {
   goals: number;
   assists: number;
   minutesPlayed: number;
+  appearances: number;
   rating: number;
   talentScore: number;
 }

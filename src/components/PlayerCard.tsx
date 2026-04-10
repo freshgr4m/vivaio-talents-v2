@@ -18,16 +18,20 @@ const POSITION_COLORS: Record<string, string> = {
 interface PlayerCardProps {
   player: Player;
   rank: number;
+  onClick?: (player: Player) => void;
 }
 
-export function PlayerCard({ player, rank }: PlayerCardProps) {
+export function PlayerCard({ player, rank, onClick }: PlayerCardProps) {
   const [imgError, setImgError] = useState(false);
 
   const posLabel = POSITION_LABELS[player.position] ?? player.position?.slice(0, 3).toUpperCase() ?? '—';
   const posColor = POSITION_COLORS[player.position] ?? 'text-white/50 border-white/20 bg-white/5';
 
   return (
-    <div className="group flex items-center gap-4 bg-[#13131e] hover:bg-[#1a1a2a] border border-white/5 hover:border-white/15 rounded-xl p-4 transition-all duration-200">
+    <div
+      className="group flex items-center gap-4 bg-[#13131e] hover:bg-[#1a1a2a] border border-white/5 hover:border-white/15 rounded-xl p-4 transition-all duration-200 cursor-pointer"
+      onClick={() => onClick?.(player)}
+    >
 
       {/* Rank */}
       <div className="w-7 text-center shrink-0">

@@ -11,6 +11,7 @@ import {
 import { Filters } from './components/Filters';
 import { FormationPage } from './components/FormationPage';
 import { VivaiPage } from './components/VivaiPage';
+import { PlayerModal } from './components/PlayerModal';
 import { LeagueSection } from './components/LeagueSection';
 import type { AgeFilter, Player, PositionFilter } from './types/player';
 import { LEAGUES } from './types/player';
@@ -92,6 +93,7 @@ export default function App() {
   const [openGroups, setOpenGroups]           = useState<Record<string, boolean>>({});
   const [staticMissing, setStaticMissing]     = useState(false);
   const [dataFetchedAt, setDataFetchedAt]     = useState<string | null>(null);
+  const [selectedPlayer, setSelectedPlayer]   = useState<Player | null>(null);
 
   const hasFetched = useRef(false);
 
@@ -292,6 +294,7 @@ export default function App() {
                   loading={isLoading}
                   collapsible
                   defaultOpen={false}
+                  onPlayerClick={setSelectedPlayer}
                 />
               );
             }
@@ -338,6 +341,7 @@ export default function App() {
                           error={result?.error}
                           loading={!results.has(child.id)}
                           sub
+                          onPlayerClick={setSelectedPlayer}
                         />
                       );
                     })}
@@ -361,6 +365,15 @@ export default function App() {
         <main className="max-w-7xl mx-auto px-6 py-8">
           <VivaiPage players={allFilteredPlayers} />
         </main>
+      )}
+
+      {/* Modal giocatore */}
+      {selectedPlayer && (
+        <PlayerModal
+          player={selectedPlayer}
+          allPlayers={allFilteredPlayers}
+          onClose={() => setSelectedPlayer(null)}
+        />
       )}
 
       {/* Footer */}

@@ -10,6 +10,7 @@ interface LeagueSectionProps {
   collapsible?: boolean;
   defaultOpen?: boolean;
   sub?: boolean;
+  onPlayerClick?: (player: Player) => void;
 }
 
 function SkeletonCard() {
@@ -47,6 +48,7 @@ export function LeagueSection({
   collapsible = false,
   defaultOpen = true,
   sub = false,
+  onPlayerClick,
 }: LeagueSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [showAll, setShowAll] = useState(false);
@@ -112,7 +114,7 @@ export function LeagueSection({
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {visiblePlayers.map((player, i) => (
-                  <PlayerCard key={`${player.id}-${player.leagueId}`} player={player} rank={i + 1} />
+                  <PlayerCard key={`${player.id}-${player.leagueId}`} player={player} rank={i + 1} onClick={onPlayerClick} />
                 ))}
               </div>
               {hiddenCount > 0 && (
