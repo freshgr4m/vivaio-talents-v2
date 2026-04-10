@@ -58,6 +58,7 @@ function positionCode(pos: string): string {
   if (pos === 'Attacker' || pos === 'Forward') return 'F';
   if (pos === 'Midfielder') return 'M';
   if (pos === 'Defender')   return 'D';
+  if (pos === 'Goalkeeper') return 'G';
   return pos;
 }
 

@@ -18,6 +18,7 @@ const POSITIONS: { value: PositionFilter; label: string }[] = [
   { value: 'F',   label: 'ATT'  },
   { value: 'M',   label: 'MID'  },
   { value: 'D',   label: 'DIF'  },
+  { value: 'G',   label: 'POR'  },
 ];
 
 const AGES: AgeFilter[] = [18, 20, 23];

@@ -73,5 +73,5 @@ export const LEAGUES: League[] = [
   { id: 434, name: 'Serie D – Girone I',  label: 'Serie D'     },
 ];
 
-export type PositionFilter = 'ALL' | 'F' | 'M' | 'D';
+export type PositionFilter = 'ALL' | 'F' | 'M' | 'D' | 'G';
 export type AgeFilter = 18 | 20 | 23;
