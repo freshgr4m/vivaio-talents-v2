@@ -273,7 +273,7 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="flex items-center justify-center gap-1.5 whitespace-nowrap transition-all"
+                className="flex items-center justify-center gap-1.5 whitespace-nowrap"
                 style={activeTab === tab.id ? {
                   padding: '7px 18px',
                   borderRadius: 8,
@@ -285,6 +285,8 @@ export default function App() {
                   letterSpacing: '1.5px',
                   textTransform: 'uppercase',
                   boxShadow: '0 0 16px rgba(0,255,135,0.35)',
+                  border: '1px solid transparent',
+                  transition: 'color 0.15s, border-color 0.15s',
                 } : {
                   padding: '7px 18px',
                   borderRadius: 8,
@@ -295,17 +297,19 @@ export default function App() {
                   fontWeight: 700,
                   letterSpacing: '1.5px',
                   textTransform: 'uppercase',
+                  border: '1px solid var(--color-border)',
+                  transition: 'color 0.15s, border-color 0.15s',
                 }}
                 onMouseEnter={e => {
                   if (activeTab !== tab.id) {
                     (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-neon)';
-                    (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(0,255,135,0.3)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,255,135,0.4)';
                   }
                 }}
                 onMouseLeave={e => {
                   if (activeTab !== tab.id) {
                     (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)';
-                    (e.currentTarget as HTMLButtonElement).style.border = 'none';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
                   }
                 }}
               >
