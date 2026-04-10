@@ -3,6 +3,7 @@ import {
   clearAllCache,
   fetchAllLeagues,
   getSessionApiCalls,
+  loadStaticData,
   readCache,
   type FetchProgress,
   type LeagueResult,
@@ -15,13 +16,30 @@ import { LEAGUES } from './types/player';
 
 const API_KEY = import.meta.env.VITE_API_FOOTBALL_KEY as string | undefined;
 
-const DISPLAY_GROUPS: { label: string; ids: number[]; name: string }[] = [
-  { label: 'Serie A',     ids: [135],                               name: 'Serie A'     },
-  { label: 'Serie B',     ids: [136],                               name: 'Serie B'     },
-  { label: 'Serie C',     ids: [138, 942, 943],                     name: 'Serie C'     },
-  { label: 'Primavera 1', ids: [705],                               name: 'Primavera 1' },
-  { label: 'Primavera 2', ids: [706],                               name: 'Primavera 2' },
-  { label: 'Serie D',     ids: [426,427,428,429,430,431,432,433,434], name: 'Serie D'   },
+// ─── Display structure ────────────────────────────────────────────────────────
+
+type SingleGroup = { type: 'single'; name: string; id: number; ids?: number[] };
+type NestedGroup  = { type: 'group';  name: string; children: { id: number; name: string }[] };
+type DisplayGroup = SingleGroup | NestedGroup;
+
+const DISPLAY_GROUPS: DisplayGroup[] = [
+  { type: 'single', name: 'Serie A',     id: 135 },
+  { type: 'single', name: 'Serie B',     id: 136 },
+  {
+    type: 'group', name: 'Serie C',
+    children: [
+      { id: 138, name: 'Girone A' },
+      { id: 942, name: 'Girone B' },
+      { id: 943, name: 'Girone C' },
+    ],
+  },
+  {
+    type: 'single', name: 'Serie D',
+    id: 426,
+    ids: [426, 427, 428, 429, 430, 431, 432, 433, 434],
+  },
+  { type: 'single', name: 'Campionato Primavera 1 (U20)', id: 705 },
+  { type: 'single', name: 'Campionato Primavera 2 (U20)', id: 706 },
 ];
 
 const LEAGUE_NAMES: Record<number, string> = {
@@ -40,6 +58,23 @@ function positionCode(pos: string): string {
   return pos;
 }
 
+function filterAndSort(
+  players: Player[],
+  ageFilter: AgeFilter,
+  positionFilter: PositionFilter,
+): Player[] {
+  const seen = new Set<number>();
+  return players
+    .filter(p => {
+      if (p.age > ageFilter) return false;
+      if (positionFilter !== 'ALL' && positionCode(p.position) !== positionFilter) return false;
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    })
+    .sort((a, b) => b.talentScore - a.talentScore);
+}
+
 type Tab = 'classifiche' | 'formazione';
 
 export default function App() {
@@ -53,6 +88,9 @@ export default function App() {
   const [selectedLeagues, setSelectedLeagues] = useState<Set<number>>(new Set(allLeagueIds));
   const [positionFilter, setPositionFilter]   = useState<PositionFilter>('ALL');
   const [ageFilter, setAgeFilter]             = useState<AgeFilter>(23);
+  const [openGroups, setOpenGroups]           = useState<Record<string, boolean>>({});
+  const [staticMissing, setStaticMissing]     = useState(false);
+  const [dataFetchedAt, setDataFetchedAt]     = useState<string | null>(null);
 
   const hasFetched = useRef(false);
 
@@ -70,9 +108,18 @@ export default function App() {
     setLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Carica dal file statico all'avvio
   useEffect(() => {
-    if (!hasFetched.current) { hasFetched.current = true; fetchData(); }
-  }, [fetchData]);
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+    setLoading(true);
+    loadStaticData((r) => setResults(prev => new Map(prev).set(r.leagueId, r)))
+      .then(({ ok, fetchedAt }) => {
+        if (!ok) setStaticMissing(true);
+        if (fetchedAt) setDataFetchedAt(fetchedAt);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   function handleToggleLeague(id: number) {
     setSelectedLeagues(prev => {
@@ -82,7 +129,11 @@ export default function App() {
     });
   }
 
-  // All players from selected leagues, filtered, deduplicated
+  function toggleGroup(name: string) {
+    setOpenGroups(prev => ({ ...prev, [name]: !(prev[name] ?? true) }));
+  }
+
+  // All players from selected leagues, filtered, deduplicated — for Formazione tab
   const allFilteredPlayers: Player[] = (() => {
     const byId = new Map<number, Player>();
     for (const id of allLeagueIds) {
@@ -127,7 +178,7 @@ export default function App() {
               Vivaio Talents
             </h1>
             <p className="text-white/40 text-sm mt-1">
-              Top giovani talenti italiani Under 23 · Stagione 2024/25
+              Top giovani talenti italiani Under 23 · Stagione 2025/26
             </p>
           </div>
           <div className="flex-1" />
@@ -155,6 +206,21 @@ export default function App() {
         </div>
       </header>
 
+      {/* Banner: dati mancanti */}
+      {staticMissing && !loading && (
+        <div className="px-6 pb-2 max-w-7xl mx-auto">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4 flex items-start gap-3">
+            <span className="text-amber-400 text-lg shrink-0">⚠️</span>
+            <div>
+              <p className="text-amber-300 text-sm font-medium">Nessun dato disponibile</p>
+              <p className="text-amber-300/60 text-xs mt-0.5">
+                Esegui <code className="bg-white/10 px-1 rounded">npm run fetch-data</code> nel terminale per scaricare i dati dall'API.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Loading progress */}
       {loading && (
         <div className="px-6 pb-4 max-w-7xl mx-auto">
@@ -180,9 +246,9 @@ export default function App() {
                 const hasError = results.get(id)?.error;
                 const isCached = readCache(id) || p?.status === 'cached';
                 let dot = 'bg-white/10', label = 'text-white/30', suffix = '';
-                if (isDone && hasError)  { dot = 'bg-red-400';   label = 'text-red-400';   }
-                else if (isDone && isCached) { dot = 'bg-blue-400'; label = 'text-blue-300'; suffix = ' ✓ cache'; }
-                else if (isDone)         { dot = 'bg-green-400'; label = 'text-green-400'; suffix = ' ✓'; }
+                if (isDone && hasError)       { dot = 'bg-red-400';              label = 'text-red-400';   }
+                else if (isDone && isCached)  { dot = 'bg-blue-400';             label = 'text-blue-300';  suffix = ' ✓ cache'; }
+                else if (isDone)              { dot = 'bg-green-400';            label = 'text-green-400'; suffix = ' ✓'; }
                 else if (p?.status === 'fetching') { dot = 'bg-[#FFD700] animate-pulse'; label = 'text-[#FFD700]'; }
                 return (
                   <span key={id} className={`flex items-center gap-1.5 text-xs ${label}`}>
@@ -218,31 +284,77 @@ export default function App() {
       {activeTab === 'classifiche' && (
         <main className="max-w-7xl mx-auto px-6 py-8 space-y-10">
           {DISPLAY_GROUPS.map(group => {
-            const anySelected = group.ids.some(id => selectedLeagues.has(id));
-            if (!anySelected) return null;
 
-            const groupPlayers = group.ids.flatMap(id => results.get(id)?.players ?? []);
-            const groupError   = group.ids.map(id => results.get(id)?.error).find(Boolean);
-            const groupLoading = group.ids.some(id => !results.has(id));
+            if (group.type === 'single') {
+              const idsToCheck = group.ids ?? [group.id];
+              const anySelected = idsToCheck.some(id => selectedLeagues.has(id));
+              if (!anySelected) return null;
+              const selectedIds = idsToCheck.filter(id => selectedLeagues.has(id));
+              const allPlayers = selectedIds.flatMap(id => results.get(id)?.players ?? []);
+              const error = selectedIds.map(id => results.get(id)?.error).find(Boolean);
+              const isLoading = selectedIds.some(id => !results.has(id));
+              const players = filterAndSort(allPlayers, ageFilter, positionFilter);
+              return (
+                <LeagueSection
+                  key={group.name}
+                  leagueName={group.name}
+                  players={players}
+                  error={error}
+                  loading={isLoading}
+                  collapsible
+                  defaultOpen={false}
+                />
+              );
+            }
 
-            const filtered = groupPlayers.filter(p => {
-              if (p.age > ageFilter) return false;
-              if (positionFilter !== 'ALL' && positionCode(p.position) !== positionFilter) return false;
-              return true;
-            });
-            // Deduplicate within group (same player in multiple gironi)
-            const seen = new Set<number>();
-            const deduped = filtered.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
-            deduped.sort((a, b) => b.talentScore - a.talentScore);
+            // Nested group (Serie C, Serie D)
+            const anyChildSelected = group.children.some(c => selectedLeagues.has(c.id));
+            if (!anyChildSelected) return null;
+            const isOpen = openGroups[group.name] ?? false;
 
             return (
-              <LeagueSection
-                key={group.label}
-                leagueName={group.name}
-                players={deduped.slice(0, 5)}
-                error={groupError}
-                loading={groupLoading}
-              />
+              <div key={group.name}>
+                {/* Group header */}
+                <div
+                  className="flex items-center gap-3 mb-2 cursor-pointer select-none"
+                  onClick={() => toggleGroup(group.name)}
+                >
+                  <h2 className="font-[Oswald] text-2xl font-bold text-white tracking-wide uppercase">
+                    {group.name}
+                  </h2>
+                  <svg
+                    className={`w-4 h-4 text-white/30 transition-transform duration-200 shrink-0 ${isOpen ? '' : '-rotate-90'}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  <div className="flex-1 h-px bg-linear-to-r from-white/10 to-transparent" />
+                  <span className="text-xs text-white/20 font-[Inter]">
+                    {group.children.filter(c => selectedLeagues.has(c.id)).length} gironi
+                  </span>
+                </div>
+
+                {/* Gironi */}
+                {isOpen && (
+                  <div className="space-y-8 pl-4 border-l border-white/8 mt-4">
+                    {group.children.map(child => {
+                      if (!selectedLeagues.has(child.id)) return null;
+                      const result = results.get(child.id);
+                      const players = filterAndSort(result?.players ?? [], ageFilter, positionFilter);
+                      return (
+                        <LeagueSection
+                          key={child.id}
+                          leagueName={child.name}
+                          players={players}
+                          error={result?.error}
+                          loading={!results.has(child.id)}
+                          sub
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </main>
@@ -263,7 +375,10 @@ export default function App() {
           <span className="text-white/10"> / ~100 richieste gratuite al giorno</span>
         </p>
         <p className="text-white/10 text-xs mt-1">
-          Dati via API-Football · Cache 24h attiva · Stagione 2024
+          Dati via API-Football · Stagione 2025/26
+          {dataFetchedAt && (
+            <> · Aggiornato il {new Date(dataFetchedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</>
+          )}
         </p>
       </footer>
     </div>

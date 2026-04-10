@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const apiKey = env.VITE_API_FOOTBALL_KEY ?? ''
 
   return {
+    base: '/vivaio-talents-v2/',
     plugins: [react(), tailwindcss()],
     server: {
       proxy: {

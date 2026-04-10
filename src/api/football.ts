@@ -3,7 +3,7 @@ import { parsePlayer } from '../utils/scoring';
 
 const BASE_URL = '/api-football';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const SEASON = 2024;
+const SEASON = 2025;
 
 // Free plan: 10 req/min.
 // We fire all endpoints for ONE league in parallel (4 calls at once),
@@ -89,6 +89,45 @@ export interface FetchProgress {
   leagueId: number;
   status: 'fetching' | 'done' | 'error' | 'cached';
   waitingSeconds?: number;
+}
+
+// ─── Load from static file (public/data/players.json) ────────────────────────
+
+export async function loadStaticData(
+  onResult: (r: LeagueResult) => void,
+): Promise<{ ok: boolean; fetchedAt?: string }> {
+  try {
+    const res = await fetch('/data/players.json');
+    if (!res.ok) return { ok: false };
+    const data = await res.json();
+    if (!data?.leagues) return { ok: false };
+
+    for (const [leagueIdStr, leagueData] of Object.entries(data.leagues) as [string, Record<string, unknown>][]) {
+      const leagueId = Number(leagueIdStr);
+      if (leagueData.error) {
+        onResult({ leagueId, players: [], error: leagueData.error as string });
+        continue;
+      }
+
+      // Nuovo formato (fetch-data v2): unica chiave "allplayers" con tutti i giocatori
+      if (leagueData.allplayers) {
+        const response = leagueData.allplayers as ApiResponse;
+        if (response.response?.length) {
+          onResult({ leagueId, players: buildPlayers(leagueId, [response]) });
+        }
+        continue;
+      }
+
+      // Vecchio formato (4 endpoint separati): topscorers, topassists, ecc.
+      const responses = ENDPOINTS.map(ep => leagueData[ep]).filter(Boolean) as ApiResponse[];
+      if (responses.length === 0) continue;
+      onResult({ leagueId, players: buildPlayers(leagueId, responses) });
+    }
+
+    return { ok: true, fetchedAt: data.fetchedAt as string | undefined };
+  } catch {
+    return { ok: false };
+  }
 }
 
 export async function fetchAllLeagues(

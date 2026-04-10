@@ -38,7 +38,8 @@ export function parsePlayer(
 
   if (ageAtSeasonStart > 23) return null;
   if (nationality !== 'Italy') return null;
-  if (minutes < 90) return null;
+  // Filtra solo se i minuti sono noti e insufficienti (alcuni campionati non espongono i minuti)
+  if (minutes > 0 && minutes < 90) return null;
 
   const talentScore = parseFloat(calcTalentScore(goals, assists, minutes, ratingRaw).toFixed(2));
 
