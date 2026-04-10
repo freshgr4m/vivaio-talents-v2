@@ -10,6 +10,7 @@ import {
 } from './api/football';
 import { Filters } from './components/Filters';
 import { FormationPage } from './components/FormationPage';
+import { MinutaggioPage } from './components/MinutaggioPage';
 import { VivaiPage } from './components/VivaiPage';
 import { PlayerModal } from './components/PlayerModal';
 import { SearchOverlay } from './components/SearchOverlay';
@@ -79,7 +80,7 @@ function filterAndSort(
     .sort((a, b) => b.talentScore - a.talentScore);
 }
 
-type Tab = 'classifiche' | 'formazione' | 'vivai';
+type Tab = 'classifiche' | 'formazione' | 'vivai' | 'minutaggio';
 
 export default function App() {
   const allLeagueIds = LEAGUES.map(l => l.id);
@@ -214,6 +215,14 @@ export default function App() {
               icon: (
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              ),
+            },
+            {
+              id: 'minutaggio', label: 'Minutaggio',
+              icon: (
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               ),
             },
@@ -401,6 +410,13 @@ export default function App() {
       {activeTab === 'vivai' && (
         <main className="max-w-7xl mx-auto px-6 py-8">
           <VivaiPage players={allFilteredPlayers} />
+        </main>
+      )}
+
+      {/* TAB: Minutaggio */}
+      {activeTab === 'minutaggio' && (
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          <MinutaggioPage players={allFilteredPlayers} onPlayerClick={setSelectedPlayer} />
         </main>
       )}
 
