@@ -10,6 +10,7 @@ import {
 } from './api/football';
 import { Filters } from './components/Filters';
 import { FormationPage } from './components/FormationPage';
+import { VivaiPage } from './components/VivaiPage';
 import { LeagueSection } from './components/LeagueSection';
 import type { AgeFilter, Player, PositionFilter } from './types/player';
 import { LEAGUES } from './types/player';
@@ -75,7 +76,7 @@ function filterAndSort(
     .sort((a, b) => b.talentScore - a.talentScore);
 }
 
-type Tab = 'classifiche' | 'formazione';
+type Tab = 'classifiche' | 'formazione' | 'vivai';
 
 export default function App() {
   const allLeagueIds = LEAGUES.map(l => l.id);
@@ -154,19 +155,6 @@ export default function App() {
   const currentlyFetching = [...progress.values()].find(p => p.status === 'fetching');
   const currentName = currentlyFetching ? LEAGUE_NAMES[currentlyFetching.leagueId] : null;
 
-  if (!API_KEY) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-8">
-        <div className="max-w-md bg-[#13131e] border border-[#FFD700]/30 rounded-2xl p-8 text-center">
-          <h2 className="font-[Oswald] text-xl text-[#FFD700] mb-2">API Key mancante</h2>
-          <p className="text-white/60 text-sm">Crea <code className="bg-white/10 px-1 rounded">.env</code> con:</p>
-          <pre className="mt-3 bg-black/40 rounded-lg p-3 text-left text-xs text-[#FFD700]/80">VITE_API_FOOTBALL_KEY=la_tua_api_key</pre>
-          <p className="mt-2 text-white/40 text-xs">Poi riavvia il dev server.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a0f] font-[Inter] text-white">
 
@@ -190,6 +178,7 @@ export default function App() {
           {([
             { id: 'classifiche', label: '📊 Classifiche' },
             { id: 'formazione',  label: '⚽ Formazione'  },
+            { id: 'vivai',       label: '🏟 Vivai'       },
           ] as { id: Tab; label: string }[]).map(tab => (
             <button
               key={tab.id}
@@ -276,7 +265,7 @@ export default function App() {
         onPositionChange={setPositionFilter}
         ageFilter={ageFilter}
         onAgeChange={setAgeFilter}
-        onRefresh={() => fetchData(true)}
+        onRefresh={API_KEY ? () => fetchData(true) : undefined}
         loading={loading}
       />
 
@@ -364,6 +353,13 @@ export default function App() {
       {activeTab === 'formazione' && (
         <main className="max-w-7xl mx-auto px-6 py-4">
           <FormationPage players={allFilteredPlayers} />
+        </main>
+      )}
+
+      {/* TAB: Vivai */}
+      {activeTab === 'vivai' && (
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          <VivaiPage players={allFilteredPlayers} />
         </main>
       )}
 
