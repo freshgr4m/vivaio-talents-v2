@@ -167,10 +167,12 @@ export default function App() {
       <header className="px-4 sm:px-6 pt-5 sm:pt-8 pb-3 sm:pb-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 min-w-0">
-            <h1 className="font-[Oswald] text-2xl sm:text-4xl font-bold tracking-wide text-white uppercase leading-tight">
-              Vivaio Talents
-            </h1>
-            <p className="text-white/40 text-xs sm:text-sm mt-0.5">
+            <img
+              src={`${import.meta.env.BASE_URL}logo-scritta.png`}
+              alt="Vivaio Talents"
+              className="h-8 sm:h-12 w-auto object-contain"
+            />
+            <p className="text-white/40 text-xs sm:text-sm mt-1">
               U23 italiani · Stagione 2025/26
             </p>
           </div>
