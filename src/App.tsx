@@ -186,7 +186,6 @@ export default function App() {
             <span className="hidden sm:inline">Cerca</span>
           </button>
 
-          <span className="text-2xl sm:text-3xl">🇮🇹</span>
         </div>
 
         {/* Tab navigation — scrollabile su mobile */}
