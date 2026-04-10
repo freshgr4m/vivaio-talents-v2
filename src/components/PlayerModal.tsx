@@ -77,9 +77,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         className="relative w-full overflow-hidden shadow-2xl"
         style={{
           maxWidth: 480,
-          backgroundImage: 'url(/vivaio-talents-v2/bgcard.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          background: 'var(--color-bg-elevated)',
           border: `1px solid ${posAccent.color}30`,
           borderRadius: 20,
           maxHeight: '92vh',
@@ -88,8 +86,19 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Overlay scuro sopra la texture */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(5,5,8,0.82)', zIndex: 0 }} />
+        {/* Texture bgcard3 in bianco/nero + luminosa */}
+        <img
+          src="/vivaio-talents-v2/bgcard3.jpg"
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center',
+            filter: 'grayscale(100%) brightness(1.6) contrast(0.85)',
+            opacity: 0.18,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
         <div className="relative" style={{ zIndex: 1 }}>
         {/* ── CARD HEADER: colored top band with photo ───────────────────── */}
         <div className="relative overflow-hidden" style={{ minHeight: 200 }}>
@@ -194,15 +203,15 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
               {/* Team + age */}
               <div className="flex items-center gap-2">
                 {player.teamLogo && <img src={player.teamLogo} alt="" className="w-5 h-5 object-contain shrink-0" />}
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 12, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: 'var(--font-label)', fontSize: 12, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {player.teamName}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
+                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.5px' }}>
                   🇮🇹 {player.age} anni
                 </span>
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
+                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.5px' }}>
                   {player.leagueName}
                 </span>
               </div>
@@ -228,7 +237,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, color, lineHeight: 1, textShadow: `0 0 12px ${color}50` }}>
                   {value}
                 </div>
-                <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
+                <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 3 }}>
                   {label}
                 </div>
                 {/* Mini bar */}
@@ -256,7 +265,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
                 border: '1px solid var(--color-border)',
                 borderRadius: 8,
               }}>
-                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.45)' }}>
+                <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.7)' }}>
                   {label}
                 </span>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, color, lineHeight: 1 }}>
@@ -298,7 +307,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         {/* ── Traiettoria ───────────────────────────────────────────────────── */}
         {league && (
           <div style={{ padding: '0 20px 14px' }}>
-            <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 8 }}>
               Traiettoria
             </div>
             <div className="flex items-center gap-2">
@@ -315,7 +324,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
                   </span>
                 </>
               )}
-              {!league.next && <span style={{ fontFamily: 'var(--font-label)', fontSize: 12, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>già al massimo livello</span>}
+              {!league.next && <span style={{ fontFamily: 'var(--font-label)', fontSize: 12, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' }}>già al massimo livello</span>}
             </div>
           </div>
         )}
