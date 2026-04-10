@@ -69,6 +69,25 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
     gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
     setShimmer(null);
   };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card || !e.touches[0]) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    const rotateY =  ((x / rect.width)  - 0.5) * 14;
+    const rotateX = -((y / rect.height) - 0.5) * 14;
+    gsap.to(card, { rotateX, rotateY, duration: 0.15, ease: 'power1.out', transformPerspective: 900 });
+    setShimmer({ x: (x / rect.width) * 100, y: (y / rect.height) * 100 });
+  };
+
+  const handleTouchEnd = () => {
+    const card = cardRef.current;
+    if (!card) return;
+    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
+    setShimmer(null);
+  };
   const league = LEAGUE_HIERARCHY[player.leagueId];
 
   const goalsP90   = player.minutesPlayed > 0 ? ((player.goals   / player.minutesPlayed) * 90).toFixed(2) : '—';
@@ -113,6 +132,8 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Texture bgcard3 in bianco/nero — scura */}
         <img
