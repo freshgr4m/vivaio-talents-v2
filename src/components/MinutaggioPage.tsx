@@ -1,13 +1,27 @@
 import { useState } from 'react';
 import type { Player } from '../types/player';
 
+const POSITION_LABELS: Record<string, string> = {
+  Attacker: 'ATT',
+  Midfielder: 'MID',
+  Defender: 'DIF',
+  Goalkeeper: 'POR',
+};
+
+const POSITION_COLORS: Record<string, string> = {
+  Attacker: 'text-red-400 border-red-400/30 bg-red-400/10',
+  Midfielder: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  Defender: 'text-green-400 border-green-400/30 bg-green-400/10',
+  Goalkeeper: 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10',
+};
+
 interface ClubStat {
   teamName: string;
   teamLogo: string;
   playerCount: number;
   totalMinutes: number;
   avgMinutes: number;
-  topPlayer: Player;
+  players: Player[];
 }
 
 function buildRanking(players: Player[], leagueId: number): ClubStat[] {
@@ -25,15 +39,15 @@ function buildRanking(players: Player[], leagueId: number): ClubStat[] {
 
   return [...clubs.entries()]
     .map(([teamName, data]) => {
-      const totalMinutes = data.players.reduce((s, p) => s + p.minutesPlayed, 0);
-      const topPlayer = [...data.players].sort((a, b) => b.minutesPlayed - a.minutesPlayed)[0];
+      const sorted = [...data.players].sort((a, b) => b.minutesPlayed - a.minutesPlayed);
+      const totalMinutes = sorted.reduce((s, p) => s + p.minutesPlayed, 0);
       return {
         teamName,
         teamLogo: data.logo,
-        playerCount: data.players.length,
+        playerCount: sorted.length,
         totalMinutes,
-        avgMinutes: Math.round(totalMinutes / data.players.length),
-        topPlayer,
+        avgMinutes: Math.round(totalMinutes / sorted.length),
+        players: sorted,
       };
     })
     .filter(c => c.totalMinutes > 0 || c.playerCount > 0)
@@ -47,11 +61,11 @@ interface Props {
 
 export function MinutaggioPage({ players, onPlayerClick }: Props) {
   const [league, setLeague] = useState<135 | 136>(135);
+  const [expandedClub, setExpandedClub] = useState<string | null>(null);
 
   const ranking = buildRanking(players, league);
   const maxMin = ranking[0]?.totalMinutes ?? 1;
 
-  // Stats globali
   const allInLeague = players.filter(p => p.leagueId === league);
   const totalMin = allInLeague.reduce((s, p) => s + p.minutesPlayed, 0);
   const leagueName = league === 135 ? 'Serie A' : 'Serie B';
@@ -78,25 +92,12 @@ export function MinutaggioPage({ players, onPlayerClick }: Props) {
         </p>
       </div>
 
-      {/* Banner crisi */}
-      <div className="bg-red-500/8 border border-red-500/20 rounded-2xl px-5 py-4 mb-6 flex items-start gap-4">
-        <span className="text-2xl shrink-0">🚨</span>
-        <div>
-          <p className="text-red-400 font-[Oswald] text-base font-bold">
-            Solo l'1.9% dei minuti in Serie A va a giovani italiani Under 21
-          </p>
-          <p className="text-red-400/60 text-xs mt-1">
-            Italia esclusa dal Mondiale per la 3ª volta consecutiva · Fonte: FIGC / Tuttosport, aprile 2026
-          </p>
-        </div>
-      </div>
-
       {/* Toggle A / B */}
       <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-fit mb-6">
         {([135, 136] as const).map(id => (
           <button
             key={id}
-            onClick={() => setLeague(id)}
+            onClick={() => { setLeague(id); setExpandedClub(null); }}
             className={`px-5 py-2 rounded-lg text-sm font-[Oswald] font-medium transition-all ${
               league === id
                 ? 'bg-[#FFD700] text-black font-semibold'
@@ -128,66 +129,135 @@ export function MinutaggioPage({ players, onPlayerClick }: Props) {
 
       {/* Classifica club */}
       <div className="bg-[#13131e] rounded-2xl border border-white/8 overflow-hidden">
+
         {/* Header tabella */}
-        <div className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-x-4 px-5 py-3 text-white/25 text-xs font-medium uppercase tracking-wider border-b border-white/5">
+        <div className="grid grid-cols-[2rem_1fr_auto_auto_1.5rem] gap-x-4 px-5 py-3 text-white/25 text-xs font-medium uppercase tracking-wider border-b border-white/5">
           <span>#</span>
           <span>Club</span>
           <span className="text-right">Giocatori</span>
           <span className="text-right">Min totali</span>
-          <span className="text-right hidden sm:block">Top player</span>
+          <span />
         </div>
 
         {ranking.map((club, i) => {
           const barW = Math.round((club.totalMinutes / maxMin) * 100);
           const pos = i + 1;
+          const isExpanded = expandedClub === club.teamName;
+
           return (
-            <div
-              key={club.teamName}
-              className="relative grid grid-cols-[2rem_1fr_auto_auto_auto] gap-x-4 px-5 py-3.5 items-center border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors"
-            >
-              {/* Barra background */}
+            <div key={club.teamName} className="border-b border-white/5 last:border-0">
+
+              {/* Club row */}
               <div
-                className="absolute left-0 top-0 h-full bg-[#FFD700]/5 pointer-events-none transition-all"
-                style={{ width: `${barW}%` }}
-              />
-
-              {/* Pos */}
-              <span className={`font-[Oswald] text-sm z-10 ${pos === 1 ? 'text-[#FFD700]' : pos <= 3 ? 'text-white/50' : 'text-white/25'}`}>
-                {pos}
-              </span>
-
-              {/* Club */}
-              <div className="flex items-center gap-3 z-10 min-w-0">
-                <img
-                  src={club.teamLogo}
-                  alt={club.teamName}
-                  className="w-7 h-7 object-contain shrink-0"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-                <span className="font-[Oswald] text-white text-sm truncate">{club.teamName}</span>
-              </div>
-
-              {/* Giocatori */}
-              <span className="text-white/50 text-sm text-right z-10">{club.playerCount}</span>
-
-              {/* Minuti */}
-              <div className="text-right z-10">
-                <span className="font-[Oswald] text-[#FFD700] font-bold text-sm">
-                  {club.totalMinutes.toLocaleString('it-IT')}
-                </span>
-                <div className="text-white/20 text-xs">∅ {club.avgMinutes}</div>
-              </div>
-
-              {/* Top player */}
-              <button
-                onClick={() => onPlayerClick(club.topPlayer)}
-                className="hidden sm:block text-right z-10 hover:text-white transition-colors"
+                className="relative grid grid-cols-[2rem_1fr_auto_auto_1.5rem] gap-x-4 px-5 py-3.5 items-center hover:bg-white/3 transition-colors cursor-pointer"
+                onClick={() => setExpandedClub(isExpanded ? null : club.teamName)}
               >
-                <span className="text-white/40 text-xs truncate max-w-[120px] block">
-                  {club.topPlayer.name}
+                {/* Barra background */}
+                <div
+                  className="absolute left-0 top-0 h-full bg-[#FFD700]/5 pointer-events-none transition-all"
+                  style={{ width: `${barW}%` }}
+                />
+
+                {/* Pos */}
+                <span className={`font-[Oswald] text-sm z-10 ${pos === 1 ? 'text-[#FFD700]' : pos <= 3 ? 'text-white/50' : 'text-white/25'}`}>
+                  {pos}
                 </span>
-                <span className="text-white/20 text-xs">{club.topPlayer.minutesPlayed} min</span>
-              </button>
+
+                {/* Club */}
+                <div className="flex items-center gap-3 z-10 min-w-0">
+                  <img
+                    src={club.teamLogo}
+                    alt={club.teamName}
+                    className="w-7 h-7 object-contain shrink-0"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <span className="font-[Oswald] text-white text-sm truncate">{club.teamName}</span>
+                </div>
+
+                {/* Giocatori */}
+                <span className="text-white/50 text-sm text-right z-10">{club.playerCount}</span>
+
+                {/* Minuti */}
+                <div className="text-right z-10">
+                  <span className="font-[Oswald] text-[#FFD700] font-bold text-sm">
+                    {club.totalMinutes.toLocaleString('it-IT')}
+                  </span>
+                  <div className="text-white/20 text-xs">∅ {club.avgMinutes}</div>
+                </div>
+
+                {/* Chevron */}
+                <svg
+                  className={`w-4 h-4 text-white/25 z-10 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
+              {/* Player list (expanded) */}
+              {isExpanded && (
+                <div className="bg-black/20 border-t border-white/5 px-4 py-3 space-y-1">
+                  {club.players.map(p => {
+                    const posLabel = POSITION_LABELS[p.position] ?? p.position?.slice(0, 3).toUpperCase() ?? '—';
+                    const posColor = POSITION_COLORS[p.position] ?? 'text-white/50 border-white/20 bg-white/5';
+                    const maxClubMin = club.players[0]?.minutesPlayed || 1;
+                    const pBarW = Math.round((p.minutesPlayed / maxClubMin) * 100);
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group"
+                        onClick={() => onPlayerClick(p)}
+                      >
+                        {/* Mini bar */}
+                        <div
+                          className="absolute left-0 top-0 h-full rounded-xl bg-[#FFD700]/5 pointer-events-none"
+                          style={{ width: `${pBarW}%` }}
+                        />
+
+                        {/* Photo */}
+                        <img
+                          src={p.photo}
+                          alt={p.name}
+                          className="w-8 h-8 rounded-full object-cover bg-white/5 border border-white/10 shrink-0 z-10"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+
+                        {/* Name + pos */}
+                        <div className="flex-1 min-w-0 z-10">
+                          <div className="flex items-center gap-2">
+                            <span className="font-[Oswald] text-white text-sm truncate group-hover:text-[#FFD700] transition-colors">
+                              {p.name}
+                            </span>
+                            <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded border font-[Oswald] ${posColor}`}>
+                              {posLabel}
+                            </span>
+                          </div>
+                          <div className="text-white/25 text-xs">{p.age} anni</div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-4 shrink-0 z-10">
+                          <div className="text-center hidden sm:block">
+                            <div className="font-[Oswald] text-sm text-white font-bold">{p.goals}</div>
+                            <div className="text-[10px] text-white/25 uppercase">Gol</div>
+                          </div>
+                          <div className="text-center hidden sm:block">
+                            <div className="font-[Oswald] text-sm text-white/70 font-bold">{p.assists}</div>
+                            <div className="text-[10px] text-white/25 uppercase">Ass</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-[Oswald] text-sm text-[#FFD700] font-bold">
+                              {p.minutesPlayed.toLocaleString('it-IT')}
+                            </div>
+                            <div className="text-[10px] text-white/25 uppercase">Min</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
