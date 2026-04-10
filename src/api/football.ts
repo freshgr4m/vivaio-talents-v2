@@ -97,7 +97,7 @@ export async function loadStaticData(
   onResult: (r: LeagueResult) => void,
 ): Promise<{ ok: boolean; fetchedAt?: string }> {
   try {
-    const res = await fetch('/data/players.json');
+    const res = await fetch(`${import.meta.env.BASE_URL}data/players.json`);
     if (!res.ok) return { ok: false };
     const data = await res.json();
     if (!data?.leagues) return { ok: false };
