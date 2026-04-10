@@ -137,7 +137,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
       >
         {/* Texture bgcard3 in bianco/nero — scura */}
         <img
-          src="/vivaio-talents-v2/bgcard3.jpg"
+          src="/vivaio-talents-v2/card3.png"
           aria-hidden="true"
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
