@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 import type { Player } from '../types/player';
-import { LEAGUE_COEFFICIENTS } from '../utils/scoring';
 
 const POSITION_LABELS: Record<string, string> = {
   Attacker:   'ATT',
