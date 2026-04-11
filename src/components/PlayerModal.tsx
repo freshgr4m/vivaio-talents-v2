@@ -114,40 +114,48 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
       style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
-      {/* Wrapper perspective per effetto 3D */}
-      <div style={{ perspective: '900px', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+      {/* Perspective wrapper */}
+      <div style={{ perspective: '900px', width: '100%', maxWidth: 480, paddingTop: 44 }} onClick={e => e.stopPropagation()}>
 
-      {/* Glow esterno */}
-      <div style={{
-        position: 'relative',
-        filter: 'drop-shadow(0 0 18px rgba(0,255,135,0.35)) drop-shadow(0 0 40px rgba(0,212,255,0.15))',
-      }}>
-
-      {/* Bordo gradiente — layer dietro la card */}
-      <div style={{
-        position: 'absolute', inset: -2, zIndex: 0,
-        background: 'linear-gradient(135deg, #00ff87 0%, #00d4ff 35%, #a855f7 65%, #00ff87 100%)',
-        clipPath: 'polygon(16px 0%, calc(100% - 16px) 0%, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)',
-      }} />
-
+      {/* Tilt container — tutto tilta insieme col GSAP */}
       <div
         ref={cardRef}
-        className="relative w-full overflow-hidden shadow-2xl"
-        style={{
-          background: 'linear-gradient(145deg, #020408 0%, #050a10 35%, #071a12 65%, #030608 100%)',
-          clipPath: 'polygon(14px 0%, calc(100% - 14px) 0%, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px)',
-          maxHeight: '92vh',
-          overflowY: 'auto',
-          transformStyle: 'preserve-3d',
-          willChange: 'transform',
-          cursor: 'default',
-          position: 'relative', zIndex: 1,
-        }}
+        style={{ position: 'relative', transformStyle: 'preserve-3d', willChange: 'transform', cursor: 'default' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Logo che esce sopra la card */}
+        <div style={{ position: 'absolute', top: -42, left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none' }}>
+          <img
+            src="/vivaio-talents-v2/logo1 (1).png"
+            alt="Vivaio Talents"
+            style={{ height: 60, width: 'auto', filter: 'drop-shadow(0 0 10px rgba(0,255,135,0.7)) drop-shadow(0 2px 6px rgba(0,0,0,0.9))' }}
+          />
+        </div>
+
+        {/* Glow esterno che segue il tilt */}
+        <div style={{ position: 'relative', filter: 'drop-shadow(0 0 20px rgba(0,255,135,0.4)) drop-shadow(0 0 50px rgba(0,212,255,0.18))' }}>
+
+        {/* Bordo gradiente */}
+        <div style={{
+          position: 'absolute', inset: -2, zIndex: 0,
+          background: 'linear-gradient(135deg, #00ff87 0%, #00d4ff 35%, #a855f7 65%, #00ff87 100%)',
+          clipPath: 'polygon(16px 0%, calc(100% - 16px) 0%, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)',
+        }} />
+
+        {/* Card */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{
+            background: 'linear-gradient(145deg, #020408 0%, #050a10 35%, #071a12 65%, #030608 100%)',
+            clipPath: 'polygon(14px 0%, calc(100% - 14px) 0%, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px)',
+            maxHeight: '88vh',
+            overflowY: 'auto',
+            position: 'relative', zIndex: 1,
+          }}
+        >
         {/* Texture bgcard3 in bianco/nero — scura */}
         <img
           src="/vivaio-talents-v2/card3.png"
@@ -439,8 +447,9 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
           </button>
         </div>
         </div>{/* end z-index wrapper */}
-      </div>{/* end card */}
-      </div>{/* end glow wrapper */}
+        </div>{/* end card */}
+        </div>{/* end glow wrapper */}
+      </div>{/* end tilt container */}
       </div>{/* end perspective wrapper */}
     </div>
   );
