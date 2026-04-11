@@ -43,6 +43,7 @@ function SkeletonCard() {
 }
 
 const DEFAULT_VISIBLE = 10;
+const LOAD_MORE_CHUNK = 25;
 
 export function LeagueSection({
   leagueName,
@@ -55,11 +56,16 @@ export function LeagueSection({
   onPlayerClick,
 }: LeagueSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const visiblePlayers = showAll ? players : players.slice(0, DEFAULT_VISIBLE);
-  const hiddenCount = players.length - DEFAULT_VISIBLE;
+  const visiblePlayers = players.slice(0, visibleCount);
+  const remainingCount = players.length - visibleCount;
+
+  // Reset visibleCount quando cambiano i filtri (nuovi players)
+  useEffect(() => {
+    setVisibleCount(DEFAULT_VISIBLE);
+  }, [players]);
 
   useEffect(() => {
     if (!listRef.current || !isOpen || loading) return;
@@ -195,9 +201,9 @@ export function LeagueSection({
                 ))}
               </div>
 
-              {hiddenCount > 0 && (
+              {remainingCount > 0 && (
                 <button
-                  onClick={() => setShowAll(v => !v)}
+                  onClick={() => setVisibleCount(c => c + LOAD_MORE_CHUNK)}
                   className="mt-3 w-full transition-all"
                   style={{
                     padding: '10px',
@@ -220,7 +226,7 @@ export function LeagueSection({
                     (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.3)';
                   }}
                 >
-                  {showAll ? '▲ Mostra meno' : `▼ Mostra altri ${hiddenCount} giocatori`}
+                  ▼ Carica altri {Math.min(remainingCount, LOAD_MORE_CHUNK)} · {remainingCount} rimanenti
                 </button>
               )}
             </>

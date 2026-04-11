@@ -22,21 +22,10 @@ type NestedGroup  = { type: 'group';  name: string; children: { id: number; name
 type DisplayGroup = SingleGroup | NestedGroup;
 
 const DISPLAY_GROUPS: DisplayGroup[] = [
-  { type: 'single', name: 'Serie A',     id: 135 },
-  { type: 'single', name: 'Serie B',     id: 136 },
-  {
-    type: 'group', name: 'Serie C',
-    children: [
-      { id: 138, name: 'Girone A' },
-      { id: 942, name: 'Girone B' },
-      { id: 943, name: 'Girone C' },
-    ],
-  },
-  {
-    type: 'single', name: 'Serie D',
-    id: 426,
-    ids: [426, 427, 428, 429, 430, 431, 432, 433, 434],
-  },
+  { type: 'single', name: 'Serie A',                      id: 135 },
+  { type: 'single', name: 'Serie B',                      id: 136 },
+  { type: 'single', name: 'Serie C',                      id: 974 },
+  { type: 'single', name: 'Serie D',                      id: 997 },
   { type: 'single', name: 'Campionato Primavera 1 (U20)', id: 705 },
   { type: 'single', name: 'Campionato Primavera 2 (U20)', id: 706 },
 ];

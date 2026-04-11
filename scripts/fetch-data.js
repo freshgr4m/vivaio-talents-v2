@@ -1,14 +1,20 @@
 /**
- * fetch-data.js — scarica i giocatori da API-Football e salva in public/data/players.json
+ * fetch-data.js — scarica tutti i giocatori italiani da API-Football
  *
- * Strategia ibrida:
- *   Serie A e B (2025/26) → paginazione completa /players?page=N  (copertura ottima)
- *   Serie C, Primavera, Serie D (2024/25) → topscorers/topassists/ecc. (API copre solo il 2024)
+ * Strategia per lega:
+ *   Serie A (135) / Serie B (136) / Primavera 1 (705) / Primavera 2 (706)
+ *     → paginazione completa, stats reali incluse nella risposta
+ *
+ *   Serie C (974) / Serie D (997)
+ *     → FASE 1: paginazione per scoprire tutti gli italiani U23 (stats null nell'API)
+ *     → FASE 2: fetch individuale per ogni giocatore per ottenere le stats reali
+ *     Motivo: l'API restituisce stats null nella paginazione per questi campionati,
+ *             ma le stats reali sono disponibili tramite /players?id=X
  *
  * Uso: npm run fetch-data
  */
 
-import { writeFileSync, readFileSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -30,26 +36,31 @@ if (!API_KEY || API_KEY === 'la_tua_api_key') {
 }
 
 // ─── Configurazione ───────────────────────────────────────────────────────────
-// Serie A e B: stagione 2025 — dati 2025/26 completi nell'API
-const SEASON_MAJOR = 2025;
-// Leghe minori: stagione 2024 — l'API non ha ancora copertura completa per il 2025/26
-const SEASON_MINOR = 2024;
 
-const PAGINATED_LEAGUES = [135, 136]; // Serie A, Serie B
-const TOPLISTS_LEAGUES  = [138, 942, 943, 705, 706, 426, 427, 428, 429, 430, 431, 432, 433, 434];
-const TOPLISTS_ENDPOINTS = ['topscorers', 'topassists', 'topyellowcards', 'topredcards'];
+// Leghe con paginazione diretta (stats reali nella risposta)
+const PAGINATED_LEAGUES = [
+  { id: 135, name: 'Serie A',        season: 2025 },
+  { id: 136, name: 'Serie B',        season: 2025 },
+  { id: 705, name: 'Primavera 1',    season: 2024 },
+  { id: 706, name: 'Primavera 2',    season: 2024 },
+];
 
-const LEAGUE_NAMES = {
-  135: 'Serie A',             136: 'Serie B',
-  138: 'Serie C – Girone A',  942: 'Serie C – Girone B',  943: 'Serie C – Girone C',
-  705: 'Primavera 1',         706: 'Primavera 2',
-  426: 'Serie D – Girone A',  427: 'Serie D – Girone B',  428: 'Serie D – Girone C',
-  429: 'Serie D – Girone D',  430: 'Serie D – Girone E',  431: 'Serie D – Girone F',
-  432: 'Serie D – Girone G',  433: 'Serie D – Girone H',  434: 'Serie D – Girone I',
-};
+// Leghe a 2 fasi: paginazione per discovery + fetch individuale per stats
+const TWO_PHASE_LEAGUES = [
+  { id: 974, name: 'Serie C',        season: 2024 },
+  { id: 997, name: 'Serie D',        season: 2024 },
+];
 
-const BETWEEN_PAGES_DELAY_MS  = 350;
-const BETWEEN_LEAGUES_DELAY_MS = 3_000;
+// Soglia anno di nascita per filtro U23 (born >= MIN_BIRTH_YEAR)
+// Usiamo 2000 per dare un po' di margine sopra i 23 anni
+const MIN_BIRTH_YEAR = 2000;
+
+const BETWEEN_PAGES_DELAY_MS    = 350;
+const BETWEEN_LEAGUES_DELAY_MS  = 2_000;
+const BETWEEN_PLAYERS_DELAY_MS  = 250;  // delay tra fetch individuali
+
+const CHECKPOINT_PATH = resolve(ROOT, 'scripts/.fetch-checkpoint.json');
+const OUT_PATH        = resolve(ROOT, 'public/data/players.json');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function sleep(ms) {
@@ -76,111 +87,286 @@ async function apiFetch(url, attempt = 1) {
   return json;
 }
 
-// ─── Paginazione completa (/players?page=N) ───────────────────────────────────
-async function fetchAllPages(leagueId, season) {
+function isU23Candidate(player) {
+  const birthDate = player.birth?.date;
+  if (!birthDate) return false;
+  const year = parseInt(birthDate.split('-')[0], 10);
+  return year >= MIN_BIRTH_YEAR;
+}
+
+// ─── Checkpoint ───────────────────────────────────────────────────────────────
+function loadCheckpoint() {
+  if (!existsSync(CHECKPOINT_PATH)) return {};
+  try { return JSON.parse(readFileSync(CHECKPOINT_PATH, 'utf-8')); } catch { return {}; }
+}
+
+function saveCheckpoint(data) {
+  writeFileSync(CHECKPOINT_PATH, JSON.stringify(data, null, 2));
+}
+
+function clearCheckpoint() {
+  if (existsSync(CHECKPOINT_PATH)) {
+    try { writeFileSync(CHECKPOINT_PATH, '{}'); } catch { /* ignore */ }
+  }
+}
+
+function saveOutput(output) {
+  mkdirSync(resolve(ROOT, 'public/data'), { recursive: true });
+  writeFileSync(OUT_PATH, JSON.stringify(output));
+}
+
+// ─── FASE UNICA: paginazione completa (Serie A/B/Primavera) ───────────────────
+async function fetchPaginated(leagueId, season) {
   const first = await apiFetch(
     `https://v3.football.api-sports.io/players?league=${leagueId}&season=${season}&page=1`
   );
   const totalPages = first.paging?.total ?? 1;
-  const all = [...(first.response ?? [])];
-  process.stdout.write(`p1/${totalPages} `);
+  const italians = (first.response ?? []).filter(p => p.player.nationality === 'Italy');
+  process.stdout.write(`p1/${totalPages}(${italians.length}🇮🇹) `);
+
+  let allItalians = [...italians];
+  let totalCalls = 1;
 
   for (let page = 2; page <= totalPages; page++) {
     await sleep(BETWEEN_PAGES_DELAY_MS);
     const data = await apiFetch(
       `https://v3.football.api-sports.io/players?league=${leagueId}&season=${season}&page=${page}`
     );
-    all.push(...(data.response ?? []));
-    process.stdout.write(`p${page} `);
+    totalCalls++;
+    const pageItalians = (data.response ?? []).filter(p => p.player.nationality === 'Italy');
+    allItalians.push(...pageItalians);
+
+    if (page % 10 === 0 || page === totalPages) {
+      process.stdout.write(`p${page}(${allItalians.length}🇮🇹) `);
+    }
   }
 
-  return {
-    get: 'players',
-    parameters: { league: String(leagueId), season: String(season) },
-    errors: [],
-    results: all.length,
-    paging: { current: 1, total: totalPages },
-    response: all,
-  };
+  return { allItalians, totalPages, totalCalls };
 }
 
-// ─── Top-list endpoints (topscorers, topassists, ecc.) ───────────────────────
-async function fetchToplist(leagueId, endpoint, season) {
-  return apiFetch(
-    `https://v3.football.api-sports.io/players/${endpoint}?league=${leagueId}&season=${season}`
+// ─── FASE 1: discovery paginata (Serie C/D, stats null ma IDs validi) ─────────
+async function discoverItalianU23Ids(leagueId, season) {
+  const first = await apiFetch(
+    `https://v3.football.api-sports.io/players?league=${leagueId}&season=${season}&page=1`
   );
+  const totalPages = first.paging?.total ?? 1;
+
+  const candidates = new Map(); // playerId → { name, birth }
+  const addCandidates = (response) => {
+    for (const item of response ?? []) {
+      if (item.player.nationality !== 'Italy') continue;
+      if (!isU23Candidate(item.player)) continue;
+      if (!candidates.has(item.player.id)) {
+        candidates.set(item.player.id, item.player);
+      }
+    }
+  };
+
+  addCandidates(first.response);
+  process.stdout.write(`p1/${totalPages}(${candidates.size}👤) `);
+  let totalCalls = 1;
+
+  for (let page = 2; page <= totalPages; page++) {
+    await sleep(BETWEEN_PAGES_DELAY_MS);
+    const data = await apiFetch(
+      `https://v3.football.api-sports.io/players?league=${leagueId}&season=${season}&page=${page}`
+    );
+    totalCalls++;
+    addCandidates(data.response);
+
+    if (page % 10 === 0 || page === totalPages) {
+      process.stdout.write(`p${page}(${candidates.size}👤) `);
+    }
+  }
+
+  return { candidateIds: [...candidates.keys()], totalPages, totalCalls };
+}
+
+// ─── FASE 2: fetch individuale per stats reali ────────────────────────────────
+async function fetchIndividualStats(playerIds, season, leagueId) {
+  const results = [];
+  const total = playerIds.length;
+  process.stdout.write(`\n   📊 Fetch stats individuali: ${total} giocatori... `);
+
+  let fetched = 0;
+  for (const playerId of playerIds) {
+    if (fetched > 0) await sleep(BETWEEN_PLAYERS_DELAY_MS);
+
+    try {
+      const data = await apiFetch(
+        `https://v3.football.api-sports.io/players?id=${playerId}&season=${season}`
+      );
+      const player = data.response?.[0];
+      if (!player) { fetched++; continue; }
+
+      // Filtra stats per la lega corretta
+      const stat = player.statistics?.find(s => s.league.id === leagueId);
+      if (!stat) { fetched++; continue; }
+
+      // Ricostruisci nel formato ApiPlayerResponse atteso dall'app
+      results.push({
+        player: player.player,
+        statistics: player.statistics.filter(s => s.league.id === leagueId),
+      });
+    } catch {
+      // Ignora errori individuali, continuiamo con gli altri
+    }
+
+    fetched++;
+    if (fetched % 50 === 0 || fetched === total) {
+      process.stdout.write(`${fetched}/${total} `);
+    }
+  }
+
+  return results;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  const total = PAGINATED_LEAGUES.length + TOPLISTS_LEAGUES.length;
-  console.log('🚀 Vivaio Talents — fetch ibrido');
-  console.log(`📅 Serie A/B: ${SEASON_MAJOR}/${SEASON_MAJOR + 1}  |  Leghe minori: ${SEASON_MINOR}/${SEASON_MINOR + 1}`);
-  console.log(`🏟️  Campionati: ${total}\n`);
+  const checkpoint = loadCheckpoint();
+  const isResume = Object.keys(checkpoint).length > 0;
 
-  const output = {
+  console.log('🚀 Vivaio Talents — fetch completo con stats reali');
+  console.log(`🏟️  Leghe: ${PAGINATED_LEAGUES.length + TWO_PHASE_LEAGUES.length}`);
+  if (isResume) {
+    const done = Object.keys(checkpoint).length;
+    console.log(`♻️  Resume: ${done} leghe già completate`);
+  }
+  console.log('');
+
+  let output = {
     fetchedAt: new Date().toISOString(),
-    seasons: { major: SEASON_MAJOR, minor: SEASON_MINOR },
+    seasons: { major: 2025, minor: 2024 },
     format: 'allplayers_v2',
     leagues: {},
   };
 
+  if (isResume && existsSync(OUT_PATH)) {
+    try {
+      const existing = JSON.parse(readFileSync(OUT_PATH, 'utf-8'));
+      output = { ...existing, fetchedAt: new Date().toISOString() };
+    } catch { /* inizia da zero */ }
+  }
+
   let totalCalls = 0;
   let firstLeague = true;
 
-  // ── Serie A e B: paginazione completa 2025/26 ─────────────────────────────
-  console.log('📡 [PAGINAZIONE 2025/26] Serie A, Serie B');
-  for (const leagueId of PAGINATED_LEAGUES) {
+  // ── Leghe con paginazione diretta ─────────────────────────────────────────
+  for (const league of PAGINATED_LEAGUES) {
+    const { id: leagueId, name, season } = league;
+
+    if (checkpoint[leagueId]) {
+      console.log(`⏭️  ${name} — già completata (${checkpoint[leagueId]} italiani)`);
+      continue;
+    }
+
     if (!firstLeague) {
-      process.stdout.write(`\n⏳ Attendo ${BETWEEN_LEAGUES_DELAY_MS / 1000}s... `);
+      process.stdout.write(`\n⏳ Pausa ${BETWEEN_LEAGUES_DELAY_MS / 1000}s... `);
       await sleep(BETWEEN_LEAGUES_DELAY_MS);
       process.stdout.write('✓\n');
     }
     firstLeague = false;
-    process.stdout.write(`📥 ${LEAGUE_NAMES[leagueId]}... `);
+
+    process.stdout.write(`📥 ${name} (${season}/${season + 1})... `);
+
     try {
-      const result = await fetchAllPages(leagueId, SEASON_MAJOR);
-      totalCalls += result.paging.total;
-      output.leagues[leagueId] = { allplayers: result };
-      console.log(`✅ (${result.results} giocatori, ${result.paging.total} pagine)`);
+      const { allItalians, totalPages, totalCalls: calls } = await fetchPaginated(leagueId, season);
+      totalCalls += calls;
+
+      output.leagues[leagueId] = {
+        allplayers: {
+          get: 'players',
+          parameters: { league: String(leagueId), season: String(season) },
+          errors: [],
+          results: allItalians.length,
+          paging: { current: 1, total: totalPages },
+          response: allItalians,
+        }
+      };
+
+      saveOutput(output);
+      checkpoint[leagueId] = allItalians.length;
+      saveCheckpoint(checkpoint);
+
+      console.log(`\n   ✅ ${allItalians.length} italiani | ${totalPages} pagine | ${calls} chiamate`);
     } catch (err) {
-      console.log(`\n❌ ${err.message}`);
-      output.leagues[leagueId] = { error: err.message };
+      console.log(`\n   ❌ ${err.message}`);
+      saveOutput(output);
+      process.exit(1);
     }
   }
 
-  // ── Leghe minori: toplists 2024/25 ────────────────────────────────────────
-  console.log('\n📡 [TOPLISTS 2024/25] Serie C, Primavera, Serie D');
-  for (const leagueId of TOPLISTS_LEAGUES) {
-    process.stdout.write(`\n⏳ Attendo ${BETWEEN_LEAGUES_DELAY_MS / 1000}s... `);
+  // ── Leghe a 2 fasi: Serie C e Serie D ────────────────────────────────────
+  for (const league of TWO_PHASE_LEAGUES) {
+    const { id: leagueId, name, season } = league;
+
+    if (checkpoint[leagueId]) {
+      console.log(`⏭️  ${name} — già completata (${checkpoint[leagueId]} italiani)`);
+      continue;
+    }
+
+    process.stdout.write(`\n⏳ Pausa ${BETWEEN_LEAGUES_DELAY_MS / 1000}s... `);
     await sleep(BETWEEN_LEAGUES_DELAY_MS);
     process.stdout.write('✓\n');
-    process.stdout.write(`📥 ${LEAGUE_NAMES[leagueId]}... `);
+
+    process.stdout.write(`📥 ${name} (${season}/${season + 1}) — Fase 1 discovery... `);
+
     try {
-      const responses = await Promise.all(
-        TOPLISTS_ENDPOINTS.map(ep => fetchToplist(leagueId, ep, SEASON_MINOR))
-      );
-      totalCalls += TOPLISTS_ENDPOINTS.length;
-      const entries = responses.reduce((sum, r) => sum + (r.results ?? 0), 0);
-      output.leagues[leagueId] = {};
-      TOPLISTS_ENDPOINTS.forEach((ep, i) => { output.leagues[leagueId][ep] = responses[i]; });
-      console.log(`✅ (${entries} entries)`);
+      // FASE 1: scopri tutti gli IDs degli italiani U23
+      const { candidateIds, totalPages, totalCalls: calls1 } = await discoverItalianU23Ids(leagueId, season);
+      totalCalls += calls1;
+      console.log(`\n   → ${candidateIds.length} candidati italiani U23+ trovati in ${totalPages} pagine (${calls1} chiamate)`);
+
+      // Pausa tra le due fasi
+      await sleep(BETWEEN_LEAGUES_DELAY_MS);
+
+      // FASE 2: fetch stats individuali
+      const playersWithStats = await fetchIndividualStats(candidateIds, season, leagueId);
+      totalCalls += candidateIds.length;
+
+      output.leagues[leagueId] = {
+        allplayers: {
+          get: 'players',
+          parameters: { league: String(leagueId), season: String(season) },
+          errors: [],
+          results: playersWithStats.length,
+          paging: { current: 1, total: totalPages },
+          response: playersWithStats,
+        }
+      };
+
+      saveOutput(output);
+      checkpoint[leagueId] = playersWithStats.length;
+      saveCheckpoint(checkpoint);
+
+      console.log(`\n   ✅ ${playersWithStats.length} italiani con stats reali | ${candidateIds.length + calls1} chiamate totali`);
     } catch (err) {
-      console.log(`\n❌ ${err.message}`);
-      output.leagues[leagueId] = { error: err.message };
+      console.log(`\n   ❌ ${err.message}`);
+      saveOutput(output);
+      process.exit(1);
     }
   }
 
-  const outPath = resolve(ROOT, 'public/data/players.json');
-  mkdirSync(resolve(ROOT, 'public/data'), { recursive: true });
-  writeFileSync(outPath, JSON.stringify(output));
+  clearCheckpoint();
 
-  console.log(`\n✅ Completato! ${totalCalls} chiamate API.`);
-  console.log(`💾 Dati salvati in public/data/players.json`);
+  // ── Riepilogo ─────────────────────────────────────────────────────────────
+  console.log(`\n${'─'.repeat(50)}`);
+  console.log(`✅ Fetch completato! ${totalCalls} chiamate API totali`);
+  let totalItalians = 0;
+  for (const [id, lg] of Object.entries(output.leagues)) {
+    if (lg.allplayers) {
+      const lName = [...PAGINATED_LEAGUES, ...TWO_PHASE_LEAGUES].find(l => l.id === Number(id))?.name ?? id;
+      console.log(`   ${lName}: ${lg.allplayers.results} italiani`);
+      totalItalians += lg.allplayers.results;
+    }
+  }
+  console.log(`\n   Totale: ${totalItalians} giocatori italiani`);
+  console.log(`💾 Salvato in public/data/players.json`);
   console.log(`🌐 Riavvia il dev server per vedere i dati aggiornati.`);
 }
 
 main().catch(err => {
   console.error('\n❌ Errore fatale:', err.message);
+  console.error('ℹ️  Riesegui npm run fetch-data per riprendere dal checkpoint');
   process.exit(1);
 });

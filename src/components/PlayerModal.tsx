@@ -18,18 +18,26 @@ const POSITION_ACCENT: Record<string, { color: string; bg: string; glow: string 
 };
 
 const LEAGUE_HIERARCHY: Record<number, { label: string; next?: string }> = {
-  426: { label: 'Serie D', next: 'Serie C' }, 427: { label: 'Serie D', next: 'Serie C' },
-  428: { label: 'Serie D', next: 'Serie C' }, 429: { label: 'Serie D', next: 'Serie C' },
-  430: { label: 'Serie D', next: 'Serie C' }, 431: { label: 'Serie D', next: 'Serie C' },
-  432: { label: 'Serie D', next: 'Serie C' }, 433: { label: 'Serie D', next: 'Serie C' },
-  434: { label: 'Serie D', next: 'Serie C' },
-  138: { label: 'Serie C', next: 'Serie B' }, 942: { label: 'Serie C', next: 'Serie B' },
-  943: { label: 'Serie C', next: 'Serie B' },
-  705: { label: 'Primavera 1', next: 'Serie B' },
+  997: { label: 'Serie D',     next: 'Serie C'     },
+  974: { label: 'Serie C',     next: 'Serie B'     },
   706: { label: 'Primavera 2', next: 'Primavera 1' },
-  136: { label: 'Serie B', next: 'Serie A' },
-  135: { label: 'Serie A' },
+  705: { label: 'Primavera 1', next: 'Serie B'     },
+  136: { label: 'Serie B',     next: 'Serie A'     },
+  135: { label: 'Serie A'                          },
 };
+
+function FormulaChip({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+      <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, color, whiteSpace: 'nowrap' }}>{value}</span>
+      <span style={{ fontFamily: 'var(--font-label)', fontSize: 9, letterSpacing: '1px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{label}</span>
+    </div>
+  );
+}
+
+function Separator() {
+  return <span style={{ fontFamily: 'var(--font-label)', fontSize: 13, color: 'rgba(255,255,255,0.2)', alignSelf: 'center', paddingBottom: 10 }}>×</span>;
+}
 
 interface MaxStats { goals: number; assists: number; minutes: number; score: number; appearances: number }
 
@@ -318,7 +326,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
             const pct = m > 0 ? Math.min(100, Math.round((value / m) * 100)) : 0;
             return (
               <div key={label} style={{
-                padding: '14px 12px',
+                padding: '10px 12px',
                 borderRight: i < 2 ? '1px solid var(--color-border)' : undefined,
                 textAlign: 'center',
                 background: `linear-gradient(180deg, ${color}08 0%, transparent 100%)`,
@@ -339,7 +347,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         </div>
 
         {/* ── SECONDARY STATS ───────────────────────────────────────────────── */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid var(--color-border)' }}>
+        <div style={{ padding: '10px 16px', borderTop: '1px solid var(--color-border)' }}>
           <div className="grid grid-cols-2 gap-2">
             {[
               { label: 'Presenze',      value: player.appearances > 0 ? player.appearances : '—', color: '#a855f7' },
@@ -349,7 +357,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
             ].map(({ label, value, color }) => (
               <div key={label} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '9px 12px',
+                padding: '7px 10px',
                 background: 'rgba(255,255,255,0.03)',
                 border: '1px solid var(--color-border)',
                 borderRadius: 8,
@@ -365,23 +373,16 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
           </div>
         </div>
 
-        {/* ── Talent score bar ──────────────────────────────────────────────── */}
-        <div style={{ padding: '0 20px 14px' }}>
+        {/* ── Talent Score + breakdown ───────────────────────────────────────── */}
+        <div style={{ padding: '0 16px 10px' }}>
           <div style={{
             padding: '12px 14px',
-            background: 'rgba(255,215,0,0.05)',
-            border: '1px solid rgba(255,215,0,0.2)',
+            background: 'rgba(255,215,0,0.04)',
+            border: '1px solid rgba(255,215,0,0.15)',
             borderRadius: 10,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,215,0,0.6)' }}>
-                Talent Score
-              </span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#FFD700', lineHeight: 1 }}>
-                {player.talentScore.toFixed(1)}
-              </span>
-            </div>
-            <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden' }}>
+            {/* Barra progresso */}
+            <div style={{ height: 5, background: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
               <div style={{
                 width: `${Math.min(100, (player.talentScore / max.score) * 100)}%`,
                 height: '100%',
@@ -390,12 +391,36 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
                 boxShadow: '0 0 8px rgba(255,215,0,0.5)',
               }} />
             </div>
+            {/* Formula orizzontale compatta */}
+            {(() => {
+              const base = parseFloat(((player.goals * 4) + (player.assists * 3) + (player.minutesPlayed / 90 * 0.8) + (player.rating * 2)).toFixed(1));
+              const agePct = Math.round((player.ageBonus - 1) * 100);
+              const lc = player.leagueCoeff;
+              const leagueColor = lc >= 4 ? '#FFD700' : lc >= 2.5 ? '#C0C0C0' : lc >= 1.3 ? '#CD7F32' : 'rgba(255,255,255,0.4)';
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px' }}>
+                  <FormulaChip label="base" value={String(base)} color="rgba(255,255,255,0.6)" />
+                  <Separator />
+                  <FormulaChip label={player.leagueName.split(' ')[0]} value={`×${lc.toFixed(1)}`} color={leagueColor} />
+                  {player.ageBonus > 1 && (
+                    <>
+                      <Separator />
+                      <FormulaChip label={`${player.age}a`} value={`+${agePct}%`} color="#00ff87" />
+                    </>
+                  )}
+                  <span style={{ fontFamily: 'var(--font-label)', fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: '0 2px' }}>=</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#FFD700', lineHeight: 1 }}>
+                    {player.talentScore.toFixed(1)}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
         {/* ── Traiettoria ───────────────────────────────────────────────────── */}
         {league && (
-          <div style={{ padding: '0 20px 14px' }}>
+          <div style={{ padding: '0 16px 10px' }}>
             <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 8 }}>
               Traiettoria
             </div>
@@ -419,7 +444,7 @@ export function PlayerModal({ player, allPlayers, onClose }: Props) {
         )}
 
         {/* ── Close button ─────────────────────────────────────────────────── */}
-        <div style={{ padding: '0 20px 20px' }}>
+        <div style={{ padding: '0 16px 16px' }}>
           <button
             onClick={onClose}
             className="w-full transition-all"

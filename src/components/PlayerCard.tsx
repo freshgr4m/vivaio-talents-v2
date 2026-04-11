@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 import type { Player } from '../types/player';
+import { LEAGUE_COEFFICIENTS } from '../utils/scoring';
 
 const POSITION_LABELS: Record<string, string> = {
   Attacker:   'ATT',
@@ -237,9 +239,146 @@ export function PlayerCard({ player, rank, onClick, animDelay = 0 }: PlayerCardP
           }}>
             Score
           </div>
+          {/* Coefficienti visibili con tooltip */}
+          <ScoreTooltip player={player} />
         </div>
       </div>
     </div>
+  );
+}
+
+// Tooltip interattivo con breakdown del calcolo score — usa portal per sfuggire a overflow:hidden
+function ScoreTooltip({ player }: { player: Player }) {
+  const [visible, setVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, right: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  const baseScore = (player.goals * 4) + (player.assists * 3) + (player.minutesPlayed / 90 * 0.8) + (player.rating * 2);
+  const agePct = Math.round((player.ageBonus - 1) * 100);
+
+  const handleEnter = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: r.top + window.scrollY - 8,   // 8px gap sopra
+        right: window.innerWidth - r.right,
+      });
+    }
+    setVisible(true);
+  };
+
+  return (
+    <div
+      ref={triggerRef}
+      className="flex items-center justify-end gap-1 mt-1"
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <LeagueCoeffBadge coeff={player.leagueCoeff} />
+      {player.ageBonus > 1 && <AgeBonusBadge bonus={player.ageBonus} />}
+
+      {visible && createPortal(
+        <div
+          className="pointer-events-none"
+          style={{
+            position: 'absolute',
+            top: coords.top,
+            right: coords.right,
+            zIndex: 9999,
+            transform: 'translateY(-100%)',
+            minWidth: 190,
+          }}
+        >
+          <div style={{
+            background: '#0d1117',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 8,
+            padding: '10px 12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
+            textAlign: 'left',
+          }}>
+            <div style={{ fontFamily: 'var(--font-label)', fontSize: 9, fontWeight: 700, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: 8 }}>
+              Come si calcola
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <ScoreRow label="Base stat" value={baseScore.toFixed(1)} color="rgba(255,255,255,0.6)" />
+              <ScoreRow label={`Lega (×${player.leagueCoeff.toFixed(1)})`} value={`= ${(baseScore * player.leagueCoeff).toFixed(1)}`} color={leagueCoeffColor(player.leagueCoeff).text} />
+              {player.ageBonus > 1 && (
+                <ScoreRow label={`Età ${player.age}a (+${agePct}%)`} value={`= ${player.talentScore.toFixed(1)}`} color="#00ff87" />
+              )}
+            </div>
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-label)', fontSize: 9, fontWeight: 700, letterSpacing: '1.5px', color: 'rgba(255,215,0,0.6)', textTransform: 'uppercase' }}>
+                Talent Score
+              </span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: '#FFD700' }}>
+                {player.talentScore.toFixed(1)}
+              </span>
+            </div>
+            {/* Freccia verso il basso */}
+            <div style={{ position: 'absolute', bottom: -5, right: 10, width: 8, height: 8, background: '#0d1117', border: '1px solid rgba(255,255,255,0.12)', borderTop: 'none', borderLeft: 'none', transform: 'rotate(45deg)' }} />
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+function ScoreRow({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+      <span style={{ fontFamily: 'var(--font-label)', fontSize: 10, color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, color, whiteSpace: 'nowrap' }}>{value}</span>
+    </div>
+  );
+}
+
+// Colore del badge in base al coefficiente lega
+function leagueCoeffColor(coeff: number): { text: string; bg: string } {
+  if (coeff >= 4.0) return { text: '#FFD700', bg: 'rgba(255,215,0,0.12)' };   // Serie A — oro
+  if (coeff >= 2.5) return { text: '#C0C0C0', bg: 'rgba(192,192,192,0.12)' }; // Serie B — argento
+  if (coeff >= 1.3) return { text: '#CD7F32', bg: 'rgba(205,127,50,0.12)' };  // Serie C / Primavera 1 — bronzo
+  return { text: 'rgba(255,255,255,0.3)', bg: 'rgba(255,255,255,0.06)' };     // D / Primavera 2
+}
+
+function LeagueCoeffBadge({ coeff }: { coeff: number }) {
+  const { text, bg } = leagueCoeffColor(coeff);
+  return (
+    <span style={{
+      fontFamily: 'var(--font-label)',
+      fontSize: 8,
+      fontWeight: 700,
+      letterSpacing: '0.5px',
+      color: text,
+      background: bg,
+      border: `1px solid ${text}30`,
+      borderRadius: 3,
+      padding: '1px 4px',
+      whiteSpace: 'nowrap',
+    }}>
+      ×{coeff.toFixed(1)}
+    </span>
+  );
+}
+
+function AgeBonusBadge({ bonus }: { bonus: number }) {
+  const pct = Math.round((bonus - 1) * 100);
+  return (
+    <span style={{
+      fontFamily: 'var(--font-label)',
+      fontSize: 8,
+      fontWeight: 700,
+      letterSpacing: '0.5px',
+      color: '#00ff87',
+      background: 'rgba(0,255,135,0.10)',
+      border: '1px solid rgba(0,255,135,0.25)',
+      borderRadius: 3,
+      padding: '1px 4px',
+      whiteSpace: 'nowrap',
+    }}>
+      ⬆+{pct}%
+    </span>
   );
 }
 
